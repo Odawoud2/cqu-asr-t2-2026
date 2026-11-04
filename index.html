@@ -1,0 +1,1439 @@
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Assessment Sample Register</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<style>
+/* Layout: full-width ink band carrying the view switch, then one measured column of
+   summary -> controls -> register. Evidence is entered in place: grade-band chips for
+   written work, an editable link field for quizzes, three method icons for documents. */
+:root{
+  --bg:#F1F4F2; --surface:#FFFFFF; --surface-2:#F7F9F8;
+  --ink:#10202E; --ink-soft:#4C6070;
+  --rule:#D5DDDA; --rule-soft:#E8EDEB;
+  --band:#10202E; --band-fg:#FFFFFF; --band-dim:#90AFA7;
+  --ok:#0E6B59; --ok-bg:#E2F0EB;
+  --part:#95610A; --part-bg:#FAEEDA;
+  --miss:#A42B21; --miss-bg:#F9E7E5;
+  --link:#1D6FB8; --focus:#1D6FB8;
+  --font-ui:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  --font-data:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D181E; --surface:#152630; --surface-2:#11212A;
+    --ink:#E7EEEB; --ink-soft:#A0B3AE;
+    --rule:#2A3F49; --rule-soft:#1C2F38;
+    --band:#07121A; --band-fg:#E7EEEB; --band-dim:#7E9E97;
+    --ok:#62C4A9; --ok-bg:#10302A;
+    --part:#DBA543; --part-bg:#32270E;
+    --miss:#E38B81; --miss-bg:#3A1A17;
+    --link:#6FB2E8; --focus:#6FB2E8;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D181E; --surface:#152630; --surface-2:#11212A;
+  --ink:#E7EEEB; --ink-soft:#A0B3AE;
+  --rule:#2A3F49; --rule-soft:#1C2F38;
+  --band:#07121A; --band-fg:#E7EEEB; --band-dim:#7E9E97;
+  --ok:#62C4A9; --ok-bg:#10302A;
+  --part:#DBA543; --part-bg:#32270E;
+  --miss:#E38B81; --miss-bg:#3A1A17;
+  --link:#6FB2E8; --focus:#6FB2E8;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-ui);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:40;background:var(--band)}
+.mono{font-family:var(--font-data)}
+button{font:inherit;cursor:pointer;color:inherit}
+a{color:var(--link)}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+.band{background:var(--band);color:var(--band-fg);border-bottom:3px solid var(--ok)}
+.band-inner,.wrap{
+  max-width:1340px;margin:0 auto;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+}
+.band-inner{padding-block:20px 18px;display:flex;flex-wrap:wrap;gap:14px 20px;align-items:flex-end;justify-content:space-between}
+.wrap{padding-block:0 72px}
+.eyebrow{font-family:var(--font-data);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--band-dim);margin:0 0 7px}
+h1{font-size:clamp(20px,4.4vw,25px);font-weight:600;letter-spacing:-.015em;margin:0;text-wrap:balance}
+.band-sub{color:var(--band-dim);font-size:13px;margin:6px 0 0;max-width:58ch}
+.band-right{display:flex;flex-wrap:wrap;gap:9px;align-items:center}
+.term{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.22);border-radius:3px;padding:7px 12px;font-family:var(--font-data);font-size:13px}
+.switch{display:inline-flex;border:1px solid rgba(255,255,255,.26);border-radius:3px;overflow:hidden}
+.switch button{background:transparent;color:var(--band-dim);border:0;padding:7px 13px;font-size:13px;font-weight:500}
+.switch button[aria-pressed="true"]{background:var(--ok);color:#fff}
+.asuc{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.22);color:var(--band-fg);border-radius:3px;padding:7px 10px;font-size:13px}
+.asuc option{color:#10202E}
+
+.naming{background:var(--surface);border:1px solid var(--rule);border-left:3px solid var(--ok);padding:14px 16px;margin-top:20px;display:flex;flex-wrap:wrap;gap:8px 24px;align-items:center}
+.naming-k{font-family:var(--font-data);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft)}
+.naming-v{font-family:var(--font-data);font-size:15px;font-weight:500;min-width:0;overflow-wrap:anywhere}
+.naming-v .tok{background:var(--ok-bg);color:var(--ok);padding:2px 6px;border-radius:2px}
+.naming-n{font-size:12.5px;color:var(--ink-soft);flex:1;min-width:220px}
+
+.rollup{display:flex;flex-wrap:wrap;gap:1px;background:var(--rule);border:1px solid var(--rule);margin-top:16px}
+.cell{background:var(--surface);padding:13px 16px;flex:1 1 128px;min-width:0}
+.num{font-family:var(--font-data);font-size:24px;font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums}
+.cap{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-soft);margin-top:5px}
+.bar{height:5px;background:var(--rule-soft);margin-top:9px;border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ok)}
+
+.toolbar{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-top:18px}
+.toolbar .gap{flex:1 1 auto}
+input,select,textarea{font:inherit;font-size:13.5px;padding:8px 10px;border:1px solid var(--rule);border-radius:3px;background:var(--surface);color:var(--ink);min-width:0}
+input[type=search]{flex:1 1 200px;max-width:280px}
+.btn{border:1px solid var(--rule);background:var(--surface);padding:8px 13px;border-radius:3px;font-weight:500;font-size:13.5px}
+.btn:hover{background:var(--surface-2);border-color:var(--ink-soft)}
+.btn-ink{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.btn-ok{background:var(--ok);border-color:var(--ok);color:#fff}
+.btn-quiet{border-color:transparent;background:transparent;color:var(--ink-soft)}
+.btn-quiet:hover{color:var(--miss);background:var(--miss-bg);border-color:var(--miss)}
+
+.card{background:var(--surface);border:1px solid var(--rule);margin-top:14px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:960px}
+thead th{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--band);color:var(--band-fg);text-align:left;font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;padding:11px 12px;white-space:nowrap}
+tbody td{border-bottom:1px solid var(--rule-soft);padding:10px 12px;vertical-align:top}
+tr.uhead td{background:var(--surface-2);border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:9px 12px;vertical-align:middle}
+.ucode{font-family:var(--font-data);font-weight:600;font-size:14px}
+.uname{color:var(--ink-soft);font-size:13px;margin-left:10px}
+.uc{font-size:13px;color:var(--ink-soft)}
+.uc b{color:var(--ink);font-weight:600}
+.atno{font-family:var(--font-data);font-weight:600;font-size:13px}
+.atw{font-family:var(--font-data);font-size:11px;color:var(--ink-soft);margin-left:6px}
+.attitle{display:block;color:var(--ink-soft);font-size:12.5px;margin-top:2px;max-width:195px}
+.atlink{display:inline-block;font-size:11.5px;margin-top:4px}
+
+/* grade bands: the marked script on top, its feedback slots beneath */
+.bands{display:flex;gap:6px;flex-wrap:wrap}
+.band{border:1px dashed var(--rule);background:var(--surface-2);border-radius:4px;padding:4px;
+  display:flex;flex-direction:column;align-items:stretch;gap:3px;min-width:56px}
+.band.part{border-style:solid;border-color:var(--part);background:var(--part-bg)}
+.band.done{border-style:solid;border-color:var(--ok);background:var(--ok-bg)}
+.bandtop{border:0;background:transparent;color:var(--ink-soft);font-family:var(--font-data);
+  font-size:12px;font-weight:600;padding:3px 6px;border-radius:2px;text-align:center;white-space:nowrap}
+.bandtop:hover{background:var(--surface);color:var(--ink)}
+.band.part .bandtop{color:var(--part)}
+.band.done .bandtop{color:var(--ok)}
+.fbrow{display:flex;gap:3px;justify-content:center}
+.fb{width:22px;height:22px;border:1px solid var(--rule);background:var(--surface);border-radius:2px;
+  display:inline-flex;align-items:center;justify-content:center;color:var(--ink-soft);padding:0}
+.fb svg{width:12px;height:12px;display:block}
+.fb:hover{border-color:var(--ink);color:var(--ink)}
+.fb.on{border-color:var(--ok);background:var(--ok);color:#fff}
+.bandclear{border:0;background:transparent;color:var(--ink-soft);font-size:10px;letter-spacing:.06em;
+  text-transform:uppercase;padding:1px;border-radius:2px}
+.bandclear:hover{color:var(--miss);background:var(--miss-bg)}
+
+/* status checklist */
+.stwrap{display:flex;flex-direction:column;gap:6px}
+.ck{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px}
+.ck li{display:flex;align-items:flex-start;gap:6px;font-size:12px;color:var(--ink-soft);line-height:1.35}
+.ck li .m{flex:none;width:13px;height:13px;margin-top:1px}
+.ck li .m svg{width:13px;height:13px;display:block}
+.ck li.y{color:var(--ok)}
+.ck li.n{color:var(--miss)}
+
+.doclabel{font-size:11px;letter-spacing:.07em;text-transform:uppercase;font-weight:600;color:var(--ink-soft);margin-bottom:5px}
+.methods{display:flex;gap:4px}
+.ico{width:28px;height:28px;border:1px solid var(--rule);background:var(--surface-2);border-radius:3px;display:inline-flex;align-items:center;justify-content:center;color:var(--ink-soft);padding:0;position:relative}
+.ico:hover{border-color:var(--ink);color:var(--ink);background:var(--surface)}
+.ico.on{border-color:var(--ok);background:var(--ok-bg);color:var(--ok)}
+.ico svg{width:15px;height:15px;display:block}
+.ico .b{position:absolute;top:-5px;right:-5px;background:var(--ok);color:#fff;border-radius:7px;min-width:14px;height:14px;font-size:9.5px;font-family:var(--font-data);font-weight:600;display:flex;align-items:center;justify-content:center;padding:0 3px}
+.held{font-size:11px;color:var(--ink-soft);margin-top:6px;max-width:150px;overflow-wrap:anywhere;font-family:var(--font-data)}
+.na{font-size:12px;color:var(--ink-soft);font-style:italic}
+
+.mwrap{display:flex;flex-direction:column;gap:5px;max-width:330px}
+.mbtn{border:1px dashed var(--rule);background:var(--surface-2);color:var(--ink-soft);border-radius:3px;padding:7px 10px;font-size:12.5px;text-align:left}
+.mbtn:hover{border-color:var(--ink);color:var(--ink)}
+.mshow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.mshow a{font-size:12px;overflow-wrap:anywhere;max-width:255px}
+.medit{border:1px solid var(--rule);background:var(--surface);border-radius:3px;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;color:var(--ink-soft);flex:none}
+.medit:hover{border-color:var(--ink);color:var(--ink)}
+.medit svg{width:13px;height:13px}
+.mlink{width:100%;font-family:var(--font-data);font-size:12.5px;padding:7px 9px}
+.mhint{font-size:11.5px;color:var(--ink-soft)}
+.mhint.warn{color:var(--miss)}
+
+.st{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:500;white-space:nowrap}
+.dot{width:11px;height:11px;border-radius:50%;flex:none}
+.st.ok{color:var(--ok)} .st.ok .dot{background:var(--ok)}
+.st.part{color:var(--part)} .st.part .dot{background:var(--part)}
+.st.miss{color:var(--miss)} .st.miss .dot{background:var(--miss)}
+.st .n{color:var(--ink-soft);font-weight:400;font-variant-numeric:tabular-nums}
+
+.note{border:1px solid var(--rule);background:var(--surface);min-width:30px;height:30px;padding:0 7px;border-radius:3px;display:inline-flex;align-items:center;justify-content:center;gap:5px;color:var(--ink-soft);font-size:12px}
+.note svg{width:15px;height:15px;display:block}
+.note:hover{border-color:var(--ink);color:var(--ink)}
+.note.on{border-color:var(--part);background:var(--part-bg);color:var(--part)}
+.note .cnt{font-family:var(--font-data);font-weight:600}
+
+.scrim{position:fixed;inset:0;background:rgba(7,18,26,.55);display:flex;align-items:center;justify-content:center;padding:18px;z-index:60}
+.modal{background:var(--surface);border:1px solid var(--rule);width:100%;max-width:620px;max-height:88vh;overflow:auto;box-shadow:0 18px 44px rgba(7,18,26,.3)}
+.mh{padding:15px 18px;border-bottom:1px solid var(--rule);display:flex;justify-content:space-between;align-items:center;gap:12px}
+.mh h2{margin:0;font-size:16px;font-weight:600}
+.mh .sub{display:block;font-size:12.5px;color:var(--ink-soft);font-weight:400;margin-top:2px}
+.mb{padding:18px}
+.mf{padding:13px 18px;border-top:1px solid var(--rule);display:flex;gap:9px;justify-content:flex-end;background:var(--surface-2);flex-wrap:wrap}
+.mf .left{margin-right:auto}
+.f{margin-bottom:13px}
+.f:last-child{margin-bottom:0}
+.f label{display:block;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:5px;font-weight:600}
+.f input,.f select,.f textarea{width:100%;font-size:14px}
+.f textarea{min-height:230px;resize:vertical;line-height:1.55;font-size:13px}
+.r2{display:flex;gap:11px;flex-wrap:wrap}
+.r2>*{flex:1 1 140px}
+.hint{font-size:12px;color:var(--ink-soft);margin:6px 0 0}
+.hint.warn{color:var(--part)}
+.filelist{border:1px solid var(--rule);border-radius:3px;margin-bottom:14px}
+.filerow{display:flex;align-items:center;gap:10px;padding:9px 11px;border-bottom:1px solid var(--rule-soft);font-size:13px}
+.filerow:last-child{border-bottom:0}
+.filerow .nm{flex:1;min-width:0;overflow-wrap:anywhere}
+.filerow .src{font-family:var(--font-data);font-size:10.5px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.06em;flex:none}
+.drop{border:1px dashed var(--rule);border-radius:3px;padding:24px 16px;text-align:center;color:var(--ink-soft);font-size:13px;background:var(--surface-2)}
+.linkout{display:block;margin-top:8px;font-size:13px;overflow-wrap:anywhere}
+.cmt{border:1px solid var(--rule-soft);background:var(--surface-2);padding:10px 12px;margin-bottom:8px;border-radius:3px}
+.cmt .m{font-family:var(--font-data);font-size:11.5px;color:var(--ink-soft);margin-bottom:4px}
+.cmt .b{font-size:13.5px;white-space:pre-wrap}
+
+.empty{padding:52px 20px;text-align:center;color:var(--ink-soft)}
+.empty h3{color:var(--ink);font-size:17px;margin:0 0 6px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(24px + env(safe-area-inset-bottom,0px));background:var(--band);color:var(--band-fg);border:1px solid var(--rule);padding:11px 18px;border-radius:3px;font-size:13.5px;z-index:70;max-width:92vw;box-shadow:0 10px 30px rgba(7,18,26,.3)}
+.flag{background:var(--part-bg);border:1px solid var(--part);color:var(--ink);padding:11px 14px;font-size:13px;margin-top:16px;border-radius:3px}
+.flag b{color:var(--part)}
+.live{padding:10px 14px;font-size:13px;margin-top:16px;border-radius:3px;border:1px solid}
+.live.ok{background:var(--ok-bg);border-color:var(--ok);color:var(--ink)}
+.live.ok b{color:var(--ok)}
+.live.warn{background:var(--miss-bg);border-color:var(--miss);color:var(--ink)}
+.live.warn b{color:var(--miss)}
+#gate{position:fixed;inset:0;background:var(--bg);z-index:90;display:flex;
+  align-items:center;justify-content:center;padding:24px}
+.gatebox{background:var(--surface);border:1px solid var(--rule);border-radius:4px;
+  padding:28px;max-width:420px;width:100%;text-align:center}
+.gatebox h2{margin:0 0 8px;font-size:19px}
+.gatebox p{color:var(--ink-soft);font-size:13.5px;margin:0 0 16px}
+@media (max-width:760px){ .attitle{max-width:160px} .naming-v{font-size:13.5px} }
+</style>
+
+<div class="band">
+  <div class="band-inner">
+    <div>
+      <p class="eyebrow">CoPBA &middot; Project Management</p>
+      <h1>Assessment Sample Register</h1>
+      <p class="band-sub" id="bandSub"></p>
+    </div>
+    <div class="band-right">
+      <select class="asuc" id="asuc" aria-label="Signed in as" hidden></select>
+      <span class="switch" role="group" aria-label="View">
+        <button id="vAdmin" aria-pressed="true">Admin</button>
+        <button id="vUC" aria-pressed="false">Coordinator</button>
+      </span>
+      <span class="term mono">Term 2, 2026</span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="naming">
+    <span class="naming-k">Uploads are renamed to</span>
+    <span class="naming-v"><span class="tok">UNITCODE</span>_<span class="tok">AT#</span>_<span class="tok">GRADE</span>.ext</span>
+    <span class="naming-n">Only the name changes. The file is stored exactly as uploaded and keeps its original extension.</span>
+  </div>
+
+  <div class="rollup" id="rollup"></div>
+
+  <div class="toolbar">
+    <input type="search" id="q" placeholder="Search unit or coordinator" aria-label="Search unit or coordinator">
+    <select id="fuc" aria-label="Filter by coordinator"></select>
+    <select id="fst" aria-label="Filter by status">
+      <option value="">All statuses</option>
+      <option value="ok">Complete</option>
+      <option value="part">In progress</option>
+      <option value="miss">Not started</option>
+    </select>
+    <span class="gap"></span>
+    <span id="adminTools">
+      <button class="btn" id="addUnit">Add unit</button>
+      <button class="btn" id="xls">Export to Excel</button>
+      <button class="btn btn-ok" id="save">Save files to my computer</button>
+      <button class="btn" id="seedbtn" hidden>Set up this term</button>
+    </span>
+    <button class="btn" id="signout">Sign out</button>
+  </div>
+
+  <div class="card"><table>
+    <thead><tr>
+      <th style="width:175px">Assessment</th>
+      <th style="width:125px">Instructions</th>
+      <th style="width:125px">Rubric</th>
+      <th>Samples</th>
+      <th style="width:150px">Status</th>
+      <th style="width:58px">Notes</th>
+    </tr></thead>
+    <tbody id="rows"></tbody>
+  </table></div>
+
+  <p class="live warn" id="liveflag"></p>
+  <p class="flag" id="previewFlag"></p>
+</div>
+
+<div id="gate" hidden></div>
+<div id="layer"></div>
+<div id="toastHost"></div>
+
+<script>
+var DATA = [];
+</script>
+
+<script type="module">
+/* ------------------------------------------------------------------
+   Storage layer: Firestore for the register, Cloud Storage for files.
+
+   Two rules this layer exists to enforce:
+   1. Nothing is written until a read has succeeded. If the register
+      cannot be loaded, the page shows the built-in seed and refuses to
+      save, so a failed connection can never overwrite good data.
+   2. A file's bytes go to Cloud Storage and only its description goes
+      into Firestore, so no document approaches the 1 MiB limit.
+------------------------------------------------------------------- */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+import { initializeFirestore, doc, getDoc, setDoc, collection, getDocs, writeBatch }
+  from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+import { getStorage, ref as sref, uploadBytes, getBlob, deleteObject }
+  from "https://www.gstatic.com/firebasejs/11.0.2/firebase-storage.js";
+import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword }
+  from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+
+/* ============== PASTE YOUR FIREBASE SETTINGS HERE ============== */
+const CONFIG = {
+  firebase: {
+    apiKey:            "AIzaSyC9aAZ2x-mgOtwryEQ8vLx7-w0TTNm7WJ4",
+    authDomain:        "cqu-asr-t2-2026.firebaseapp.com",
+    projectId:         "cqu-asr-t2-2026",
+    storageBucket:     "cqu-asr-t2-2026.firebasestorage.app",
+    messagingSenderId: "283180484894",
+    appId:             "1:283180484894:web:787c600bff7583d12aa10f"
+  },
+  databaseId: "(default)",   // the name you gave the Firestore database
+  term:       "T2-2026",     // this register covers one term and is then retired
+
+  /* Two shared sign-ins, no CQU account needed. Create both in Firebase
+     Authentication under Email/Password; the password is the access code you
+     hand out. The addresses are never emailed, so they can be anything. */
+  accounts: {
+    coordinator: "asr-coordinator@register.local",
+    admin:       "asr-admin@register.local"
+  }
+};
+/* =============================================================== */
+
+const Store = {
+  ready: false,      // a read has succeeded; writing is allowed
+  user: null,
+  role: null,
+  who: "",
+  reason: "",        // why the store is unavailable, shown to the person
+  db: null, storage: null, auth: null
+};
+
+function configured() {
+  return !!(CONFIG.firebase.apiKey && CONFIG.firebase.projectId
+            && CONFIG.firebase.storageBucket);
+}
+
+function start() {
+  const app = initializeApp(CONFIG.firebase);
+  // CQU's network proxies block the streaming transport Firestore prefers,
+  // so long polling is forced rather than left to autodetection.
+  const settings = { experimentalForceLongPolling: true };
+  Store.db = (CONFIG.databaseId && CONFIG.databaseId !== "(default)")
+    ? initializeFirestore(app, settings, CONFIG.databaseId)
+    : initializeFirestore(app, settings);
+  Store.storage = getStorage(app);
+  Store.auth = getAuth(app);
+  return app;
+}
+
+/* ---------------- authentication ---------------- */
+
+/* One shared access code per role. Firebase checks the code on its own
+   servers and rate limits guessing, so the code never has to be trusted to
+   anything in this page. */
+function signInWithCode(role, code) {
+  const account = CONFIG.accounts[role === "admin" ? "admin" : "coordinator"];
+  return signInWithEmailAndPassword(Store.auth, account, code);
+}
+
+function roleOf(user) {
+  if (!user || !user.email) return null;
+  const e = user.email.toLowerCase();
+  if (e === String(CONFIG.accounts.admin).toLowerCase()) return "admin";
+  if (e === String(CONFIG.accounts.coordinator).toLowerCase()) return "coordinator";
+  return null;
+}
+
+/* A shared code cannot say who is using it, so the person types their name
+   once and it is recorded against everything they upload. That is a signature
+   on the work, not a security control, and the page says as much. */
+function whoAmI() {
+  try { return localStorage.getItem("asr_who") || ""; } catch (e) { return ""; }
+}
+
+function setWhoAmI(name) {
+  Store.who = name || "";
+  try { localStorage.setItem("asr_who", Store.who); } catch (e) {}
+}
+
+/* ---------------- reading the register ---------------- */
+
+const termDoc = () => doc(Store.db, "terms", CONFIG.term);
+const unitsCol = () => collection(Store.db, "terms", CONFIG.term, "units");
+const atCol = (code) => collection(Store.db, "terms", CONFIG.term, "units", code, "assessments");
+
+async function load() {
+  const snap = await getDocs(unitsCol());
+  const units = [];
+  for (const u of snap.docs) {
+    const data = u.data();
+    const ats = await getDocs(atCol(u.id));
+    units.push(Object.assign({}, data, {
+      code: u.id,
+      assessments: ats.docs
+        .map(d => Object.assign({ id: d.id }, d.data()))
+        .sort((a, b) => String(a.label).localeCompare(String(b.label)))
+    }));
+  }
+  units.sort((a, b) => a.code.localeCompare(b.code));
+  Store.ready = true;
+  return units;
+}
+
+/* ---------------- writing ---------------- */
+
+function guard() {
+  if (!Store.ready) {
+    throw new Error("Not saved. The register has not been loaded from the "
+      + "database in this session, so writing now could overwrite live data.");
+  }
+}
+
+async function saveAssessment(unitCode, a) {
+  guard();
+  const copy = JSON.parse(JSON.stringify(a));
+  delete copy.id;
+  copy.updatedAt = new Date().toISOString();
+  copy.updatedBy = Store.who || "unattributed";
+  await setDoc(doc(atCol(unitCode), a.id), copy, { merge: false });
+}
+
+async function saveUnit(u) {
+  guard();
+  await setDoc(doc(unitsCol(), u.code), {
+    name: u.name || "", uc: u.uc || "", ucEmail: u.ucEmail || "",
+    ucEmails: (u.ucEmails && u.ucEmails.length)
+      ? u.ucEmails
+      : (u.ucEmail ? [u.ucEmail.toLowerCase()] : []),
+    updatedAt: new Date().toISOString()
+  }, { merge: true });
+  const batch = writeBatch(Store.db);
+  (u.assessments || []).forEach(a => {
+    const copy = JSON.parse(JSON.stringify(a));
+    delete copy.id;
+    batch.set(doc(atCol(u.code), a.id), copy);
+  });
+  await batch.commit();
+}
+
+/* ---------------- files ---------------- */
+
+function filePath(unitCode, label, category, name) {
+  return [CONFIG.term, unitCode, label, category, name].join("/");
+}
+
+async function putFile(unitCode, label, category, name, file) {
+  guard();
+  const path = filePath(unitCode, label, category, name);
+  await uploadBytes(sref(Store.storage, path), file, {
+    customMetadata: {
+      uploadedBy: Store.who || "unattributed",
+      uploadedAt: new Date().toISOString()
+    }
+  });
+  return { name: name, path: path, size: file.size, remote: false,
+           storedAt: new Date().toISOString() };
+}
+
+async function getFile(path) {
+  return await getBlob(sref(Store.storage, path));
+}
+
+async function dropFile(path) {
+  guard();
+  try { await deleteObject(sref(Store.storage, path)); } catch (e) {}
+}
+
+/* ---------------- seeding, admin only ---------------- */
+
+async function seed(units) {
+  guard();
+  await setDoc(termDoc(), { term: CONFIG.term, seededAt: new Date().toISOString(),
+                            seededBy: Store.who || "unattributed" }, { merge: true });
+  for (const u of units) await saveUnit(u);
+}
+
+async function isEmpty() {
+  const snap = await getDocs(unitsCol());
+  return snap.empty;
+}
+
+window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
+               whoAmI, setWhoAmI, finishSignOut: () => signOut(Store.auth),
+               load, saveAssessment, saveUnit, putFile, getFile, dropFile,
+               seed, isEmpty, onAuthStateChanged, filePath };
+
+</script>
+
+<script type="module">
+(function(){
+  var GRADES=["HD","D","C","P","F"], REQUIRED=3;
+  var inFrame=(function(){ try{ return window.self!==window.top }catch(e){ return true } })();
+  var uid=function(){return Math.random().toString(36).slice(2,10)};
+  var ext=function(n){var i=n.lastIndexOf(".");return i>0?n.slice(i):""};
+  var safe=function(s){return String(s||"").replace(/[\\/:*?"<>|]/g,"-").trim()};
+  var esc=function(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]})};
+
+  var ICON={
+    file:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"><path d="M4.2 1.8h5l3 3v9.4h-8z"/><path d="M9.2 1.8v3h3"/></svg>',
+    link:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M6.6 9.4a2.9 2.9 0 0 0 4.1 0l1.7-1.7a2.9 2.9 0 1 0-4.1-4.1l-.9.9"/><path d="M9.4 6.6a2.9 2.9 0 0 0-4.1 0L3.6 8.3a2.9 2.9 0 1 0 4.1 4.1l.9-.9"/></svg>',
+    text:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M2.6 4h10.8M2.6 8h10.8M2.6 12h6.6"/></svg>',
+    edit:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"><path d="M11.4 2.4l2.2 2.2L5.8 12.4l-3 .8.8-3z"/></svg>',
+    note:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"><path d="M13.5 10.2a1.3 1.3 0 0 1-1.3 1.3H5.9L3.2 14V4.1a1.3 1.3 0 0 1 1.3-1.3h7.7a1.3 1.3 0 0 1 1.3 1.3z"/></svg>',
+    sheet:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round"><rect x="2.4" y="3.2" width="11.2" height="9.6" rx="1"/><path d="M2.4 6.4h11.2M6.4 6.4v6.4"/></svg>',
+    tick:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3.4 8.4l3 3 6.2-7"/></svg>',
+    cross:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4.2 4.2l7.6 7.6M11.8 4.2l-7.6 7.6"/></svg>'
+  };
+  var METHOD={file:"Files",link:"Moodle link",text:"Text"};
+
+  function blankItem(){ return {text:"",link:"",files:[]} }
+  function blankBand(){ return {script:null,feedback:null} }
+  function has(item,kind){
+    if(!item) return false;
+    return kind==="file"?item.files.length>0:(kind==="link"?!!item.link:!!item.text);
+  }
+  function any(item){ return has(item,"file")||has(item,"link")||has(item,"text") }
+
+  /* Register built from the Moodle unit sites for Term 2, 2026. */
+  var state={ view:"admin", asUC:"", q:"", uc:"", st:"", editing:null, units:[],
+              live:false, note:"" };
+
+  /* The register as first collected from Moodle. It is only ever written to
+     the database by an explicit action, and is shown read-only otherwise. */
+  function seedUnitsFrom(arr){ return arr.map(function(u){
+    return {id:u.code,code:u.code,name:u.name,uc:u.uc,ucEmail:u.ucEmail,
+      ucEmails:(u.ucEmail?[u.ucEmail.toLowerCase()]:[]),
+      assessments:u.assessments.map(function(a){
+        return {id:a.label,label:a.label,title:a.title,weight:a.weight,isQuiz:a.quiz,
+          moodleUrl:a.moodle,
+          moodle:a.quiz?{url:a.moodle,at:null}:null,
+          instructions:{text:a.instrText||"",link:a.moodle,
+            files:(a.instrFiles||[]).map(function(f){return {name:f.n,url:f.u,remote:true}})},
+          rubric:{text:"",link:"",
+            files:(a.rubricFiles||[]).map(function(f){return {name:f.n,url:f.u,remote:true}})},
+          samples:GRADES.reduce(function(o,g){o[g]=blankBand();return o},{}),
+          comments:[]};
+      })};
+  }); }
+  function seedUnits(){ return seedUnitsFrom(DATA) }
+
+  /* The register content is not shipped inside the page, so it cannot be read
+     from the source by anyone who merely has the address. The administrator
+     supplies it once, from a file on their own machine, when seeding. */
+  function pickRegisterFile(){
+    return new Promise(function(resolve,reject){
+      var i=document.createElement("input");
+      i.type="file"; i.accept="application/json,.json";
+      i.onchange=function(){
+        var f=i.files[0];
+        if(!f) return reject(new Error("No file chosen."));
+        var r=new FileReader();
+        r.onload=function(){
+          try{
+            var parsed=JSON.parse(r.result);
+            if(!Array.isArray(parsed) || !parsed.length || !parsed[0].code)
+              throw new Error("That file is not a register export.");
+            resolve(parsed);
+          }catch(e){ reject(e) }
+        };
+        r.onerror=function(){ reject(new Error("Could not read that file.")) };
+        r.readAsText(f);
+      };
+      i.click();
+    });
+  }
+
+  /* A band counts as a sample only when the marked work AND the marker's
+     feedback are both there. Feedback can be typed or a marked rubric sheet. */
+  function bandDone(b){ return !!(b && b.script && b.feedback) }
+  function bandStarted(b){ return !!(b && (b.script || b.feedback)) }
+  /* Every change is written straight back. If the register was never
+     loaded from the database this session, the write is refused rather
+     than risking an overwrite with whatever the page happens to hold. */
+  function persist(unitCode, a){
+    if(!state.live){ say("Not saved: the register is read-only in this session."); return }
+    window.ASR.saveAssessment(unitCode, a)
+      .catch(function(e){ say("Not saved: "+(e&&e.message?e.message:e)) });
+  }
+  function touch(u,a){ render(); persist(u.code, a); }
+
+  function needOf(a){ return a.isQuiz?1:REQUIRED }
+  function held(a){ return a.isQuiz ? (a.moodle?1:0)
+    : GRADES.filter(function(g){return bandDone(a.samples[g])}).length }
+
+  /* A quiz has no marking rubric and no scripts to sample, so it is asked
+     for its instructions and a verified Moodle link, and nothing else. */
+  function checklist(a){
+    var rows=[{k:"Assessment instructions",ok:any(a.instructions)}];
+    if(a.isQuiz){
+      rows.push({k:"Moodle quiz link",ok:!!a.moodle});
+    } else {
+      rows.push({k:"Assessment rubric",ok:any(a.rubric)});
+      rows.push({k:held(a)+" of "+REQUIRED+" assessment samples",ok:held(a)>=REQUIRED});
+    }
+    return rows;
+  }
+  function stat(a){
+    var rows=checklist(a), done=rows.filter(function(r){return r.ok}).length;
+    if(done===rows.length) return "ok";
+    if(done>0 || held(a)>0) return "part";
+    return "miss";
+  }
+  var LABEL={ok:"Complete",part:"In progress",miss:"Not started"};
+
+  var tTimer;
+  function say(msg){
+    var host=document.getElementById("toastHost");
+    host.innerHTML='<div class="toast">'+esc(msg)+'</div>';
+    clearTimeout(tTimer); tTimer=setTimeout(function(){host.innerHTML=""},3800);
+  }
+  function find(unitId,atId){
+    var r={u:null,a:null};
+    state.units.forEach(function(x){ if(x.id===unitId){ r.u=x;
+      x.assessments.forEach(function(y){ if(y.id===atId) r.a=y }) } });
+    return r;
+  }
+  function validUrl(v){
+    if(!/^https?:\/\//i.test(v)) return null;
+    try{ return new URL(v).href }catch(e){ return null }
+  }
+  function itemOf(a,which){ return which==="instructions"?a.instructions:a.rubric }
+
+  /* ---------- cells ---------- */
+  function docCell(u,a,which){
+    var it=itemOf(a,which);
+    if(which==="rubric" && a.isQuiz){
+      return '<div class="doclabel">Rubric</div><div class="na">Not required</div>';
+    }
+    var h='<div class="doclabel">'+(which==="instructions"?"Instructions":"Rubric")+'</div>';
+    h+='<div class="methods">'+["file","link","text"].map(function(k){
+      var on=has(it,k);
+      var badge=(k==="file"&&it.files.length>1)?'<span class="b">'+it.files.length+'</span>':"";
+      return '<button class="ico'+(on?" on":"")+'" title="'+esc(METHOD[k])+'"'
+        +' aria-label="'+esc(METHOD[k])+'" data-act="doc" data-u="'+u.id+'" data-a="'+a.id+'"'
+        +' data-w="'+which+'" data-k="'+k+'">'+ICON[k]+badge+'</button>';
+    }).join("")+'</div>';
+    var bits=[];
+    if(has(it,"file")) bits.push(it.files.length+(it.files.length>1?" files":" file"));
+    if(has(it,"link")) bits.push("link");
+    if(has(it,"text")) bits.push(Math.round(it.text.length/100)/10+"k chars");
+    if(bits.length) h+='<div class="held">'+esc(bits.join(" · "))+'</div>';
+    return h;
+  }
+
+  function sampleCell(u,a){
+    if(a.isQuiz){
+      var key=u.id+"|"+a.id;
+      if(state.editing===key){
+        return '<div class="mwrap"><input class="mlink" type="url" inputmode="url" '
+          +'data-u="'+u.id+'" data-a="'+a.id+'" value="'+esc(a.moodle?a.moodle.url:"")+'" '
+          +'placeholder="https://moodle.cqu.edu.au/mod/quiz/view.php?id=..."> '
+          +'<span class="mhint">Paste the link and press Enter. Escape to cancel.</span></div>';
+      }
+      if(a.moodle){
+        return '<div class="mwrap"><div class="mshow">'
+          +'<a href="'+esc(a.moodle.url)+'" target="_blank" rel="noopener">'+esc(a.moodle.url)+'</a>'
+          +'<button class="medit" title="Edit link" aria-label="Edit link" data-act="mlink" data-u="'+u.id+'" data-a="'+a.id+'">'+ICON.edit+'</button>'
+          +'</div><span class="mhint">Open it and check it is the right quiz.</span></div>';
+      }
+      return '<div class="mwrap"><button class="mbtn" data-act="mlink" data-u="'+u.id+'" data-a="'+a.id+'">'
+        +'Click to paste the Moodle link</button>'
+        +'<span class="mhint">No samples are uploaded for a quiz.</span></div>';
+    }
+    return '<div class="bands">'+GRADES.map(function(g){
+      var b=a.samples[g]||blankBand(), cls=bandDone(b)?" done":(bandStarted(b)?" part":"");
+      var fb=b.feedback;
+      var d=function(k){ return ' data-u="'+u.id+'" data-a="'+a.id+'" data-g="'+g+'" data-k="'+k+'"' };
+      return '<div class="band'+cls+'">'
+        +'<button class="bandtop" title="'+esc(b.script?b.script.name:("Upload the "+g+" sample script"))+'"'
+          +' data-act="script"'+d("script")+'>'+g+(b.script?' ✓':'')+'</button>'
+        +'<div class="fbrow">'
+          +'<button class="fb'+(fb&&fb.kind==="text"?" on":"")+'" data-act="fb"'+d("text")+'"'
+            +' title="Feedback as text" aria-label="Feedback as text">'+ICON.text+'</button>'
+          +'<button class="fb'+(fb&&fb.kind==="file"?" on":"")+'" data-act="fb"'+d("file")+'"'
+            +' title="Marked rubric sheet" aria-label="Marked rubric sheet">'+ICON.sheet+'</button>'
+        +'</div>'
+        +(bandStarted(b)?'<button class="bandclear" data-act="rmband"'+d("clear")
+            +' title="Clear this band">clear</button>':'')
+        +'</div>';
+    }).join("")+'</div>';
+  }
+
+  function statusCell(a){
+    var s=stat(a);
+    return '<div class="stwrap"><span class="st '+s+'"><span class="dot"></span>'+LABEL[s]+'</span>'
+      +'<ul class="ck">'+checklist(a).map(function(r){
+        return '<li class="'+(r.ok?"y":"n")+'"><span class="m">'
+          +(r.ok?ICON.tick:ICON.cross)+'</span>'+esc(r.k)+'</li>';
+      }).join("")+'</ul></div>';
+  }
+
+  /* ---------- render ---------- */
+  function visibleUnits(){
+    var t=state.q.trim().toLowerCase(), out=[];
+    state.units.forEach(function(u){
+      if(state.view==="uc" && state.asUC && u.uc.indexOf(state.asUC)<0) return;
+      if(state.view==="admin" && state.uc && u.uc!==state.uc) return;
+      if(t && (u.code+" "+u.name+" "+u.uc).toLowerCase().indexOf(t)<0) return;
+      var rows=u.assessments.filter(function(a){ return !state.st || stat(a)===state.st });
+      if(rows.length) out.push({u:u,rows:rows});
+    });
+    return out;
+  }
+
+  function render(){
+    var isAdmin=state.view==="admin";
+    document.getElementById("adminTools").hidden=!isAdmin;
+    document.getElementById("fuc").hidden=!isAdmin;
+    document.getElementById("asuc").hidden=isAdmin;
+    document.getElementById("vAdmin").setAttribute("aria-pressed",isAdmin?"true":"false");
+    document.getElementById("vUC").setAttribute("aria-pressed",isAdmin?"false":"true");
+    document.getElementById("bandSub").textContent = isAdmin
+      ? "Moderation evidence across all Project Management units: instructions, marking rubric, and three graded samples drawn from the five grade bands."
+      : "Instructions, rubrics and quiz links have been collected from your Moodle site. Add three graded samples across the bands for each assessment.";
+    document.getElementById("previewFlag").innerHTML = isAdmin
+      ? "<b>Layout preview.</b> Assessments, instruction text, attached files, rubric files and quiz links were collected from the Moodle unit sites for Term 2, 2026. Saving files and the Excel export are blocked inside this preview window. Nothing is stored yet, so a refresh clears it."
+      : "<b>This is what a coordinator sees.</b> Only their own units, with no register-wide tools. Switch back to Admin at the top right.";
+
+    var scope=[];
+    state.units.forEach(function(u){
+      if(state.view==="uc" && state.asUC && u.uc.indexOf(state.asUC)<0) return;
+      scope.push(u);
+    });
+    var all=[]; scope.forEach(function(u){ all=all.concat(u.assessments) });
+    var written=all.filter(function(a){return !a.isQuiz}), quizzes=all.filter(function(a){return a.isQuiz});
+    var sampHeld=0, sampNeed=written.length*REQUIRED, instr=0, rub=0, prog=0, progNeed=0;
+    all.forEach(function(a){
+      if(any(a.instructions)) instr++;
+      if(!a.isQuiz && any(a.rubric)) rub++;
+      /* a written assessment owes instructions, a rubric and three samples;
+         a quiz owes instructions and a verified link */
+      prog += (any(a.instructions)?1:0)
+            + (a.isQuiz ? (a.moodle?1:0)
+                        : (any(a.rubric)?1:0) + Math.min(held(a),REQUIRED)/REQUIRED);
+      progNeed += a.isQuiz?2:3;
+    });
+    written.forEach(function(a){ sampHeld+=Math.min(held(a),REQUIRED) });
+    var pct=progNeed?Math.round(prog/progNeed*100):0;
+
+    document.getElementById("rollup").innerHTML=[
+      ["Units",scope.length,0],
+      ["Assessments",all.length,0],
+      ["Instructions",instr+" / "+all.length,0],
+      ["Rubrics",rub+" / "+written.length,0],
+      ["Quiz links",quizzes.filter(function(a){return a.moodle}).length+" / "+quizzes.length,0],
+      ["Samples held",sampHeld+" / "+sampNeed,0],
+      ["Overall completion",pct+"%",pct]
+    ].map(function(c){
+      return '<div class="cell"><div class="num">'+c[1]+'</div><div class="cap">'+c[0]+'</div>'
+        +(c[2]?'<div class="bar"><i style="width:'+c[2]+'%"></i></div>':'')+'</div>';
+    }).join("");
+
+    var names=[];
+    state.units.forEach(function(u){ u.uc.split(", ").forEach(function(n){
+      if(n && names.indexOf(n)<0) names.push(n) }) });
+    names.sort();
+    document.getElementById("fuc").innerHTML='<option value="">All coordinators</option>'
+      +state.units.map(function(u){return u.uc}).filter(function(v,i,arr){return v&&arr.indexOf(v)===i}).sort()
+        .map(function(n){ return '<option'+(state.uc===n?" selected":"")+'>'+esc(n)+'</option>' }).join("");
+    if(!state.asUC && names.length) state.asUC=names[0];
+    document.getElementById("asuc").innerHTML=names.map(function(n){
+      return '<option'+(state.asUC===n?" selected":"")+'>'+esc(n)+'</option>' }).join("");
+
+    var groups=visibleUnits(), html="";
+    if(!groups.length){
+      html='<tr><td colspan="6"><div class="empty"><h3>Nothing matches those filters</h3>'
+        +'<p>Clear the search to see the full register.</p></div></td></tr>';
+    }
+    groups.forEach(function(g){
+      html+='<tr class="uhead"><td colspan="4"><span class="ucode">'+esc(g.u.code)+'</span>'
+        +'<span class="uname">'+esc(g.u.name)+'</span></td>'
+        +'<td colspan="2" style="text-align:right"><span class="uc">Coordinator: <b>'
+        +esc(g.u.uc||"unassigned")+'</b></span></td></tr>';
+      g.rows.forEach(function(a){
+        html+='<tr>'
+          +'<td><span class="atno">'+esc(a.label)+'</span><span class="atw">'+esc(a.weight)+'</span>'
+            +'<span class="attitle">'+esc(a.title)+'</span>'
+            +'<a class="atlink" href="'+esc(a.moodleUrl)+'" target="_blank" rel="noopener">Open in Moodle</a></td>'
+          +'<td>'+docCell(g.u,a,"instructions")+'</td>'
+          +'<td>'+docCell(g.u,a,"rubric")+'</td>'
+          +'<td>'+sampleCell(g.u,a)+'</td>'
+          +'<td>'+statusCell(a)+'</td>'
+          +'<td><button class="note'+(a.comments.length?" on":"")+'" data-act="note" data-u="'+g.u.id+'" data-a="'+a.id+'"'
+            +' title="'+(a.comments.length?a.comments.length+" note(s)":"Add a note")+'" aria-label="Notes">'
+            +ICON.note+(a.comments.length?'<span class="cnt">'+a.comments.length+'</span>':"")+'</button></td>'
+          +'</tr>';
+      });
+    });
+    document.getElementById("rows").innerHTML=html;
+
+    if(state.editing){
+      var inp=document.querySelector(".mlink");
+      if(inp){ inp.focus(); inp.select() }
+    }
+  }
+
+  /* ---------- interactions ---------- */
+  var rows=document.getElementById("rows");
+  rows.addEventListener("click",function(e){
+    var el=e.target.closest("[data-act]"); if(!el) return;
+    var act=el.dataset.act, u=el.dataset.u, a=el.dataset.a;
+    if(act==="rmband"){ e.stopPropagation();
+      var fb=find(u,a); fb.a.samples[el.dataset.g]=blankBand();
+      touch(fb.u,fb.a); say("Band cleared"); return }
+    if(act==="script") return pickScript(u,a,el.dataset.g);
+    if(act==="fb") return feedbackModal(u,a,el.dataset.g,el.dataset.k);
+    if(act==="doc") return docModal(u,a,el.dataset.w,el.dataset.k);
+    if(act==="mlink"){ state.editing=u+"|"+a; render(); return }
+    if(act==="note") return noteModal(u,a);
+  });
+  rows.addEventListener("keydown",function(e){
+    if(!e.target.classList.contains("mlink")) return;
+    if(e.key==="Enter"){ e.preventDefault(); saveLink(e.target) }
+    else if(e.key==="Escape"){ state.editing=null; render() }
+  });
+  rows.addEventListener("focusout",function(e){
+    if(e.target.classList.contains("mlink") && state.editing) saveLink(e.target,true);
+  });
+
+  function saveLink(inp,quiet){
+    var f=find(inp.dataset.u,inp.dataset.a), v=inp.value.trim();
+    if(!v){ f.a.moodle=null; state.editing=null; touch(f.u,f.a); return }
+    var url=validUrl(v);
+    if(!url){
+      if(quiet){ state.editing=null; render();
+        return say("That link was not saved. A web address must start with https://") }
+      var w=inp.parentNode.querySelector(".mhint");
+      if(w){ w.className="mhint warn"; w.textContent="That does not look like a web address. It should start with https://" }
+      return;
+    }
+    f.a.moodle={url:url,at:new Date().toISOString()};
+    state.editing=null; touch(f.u,f.a);
+    if(!quiet) say("Moodle link saved. Open it to confirm it is the right quiz.");
+  }
+
+  function pickScript(unitId,atId,grade){
+    var f=find(unitId,atId); if(!f.a) return;
+    if(!state.live) return say("Uploading is unavailable until the register loads.");
+    var inp=document.createElement("input"); inp.type="file";
+    inp.onchange=function(){
+      var fl=inp.files[0]; if(!fl) return;
+      var name=safe(f.u.code)+"_"+f.a.label+"_"+grade+ext(fl.name);
+      say("Uploading "+name+"...");
+      window.ASR.putFile(f.u.code, f.a.label, "Assessment Samples/"+grade, name, fl)
+        .then(function(rec){
+          if(!f.a.samples[grade]) f.a.samples[grade]=blankBand();
+          rec.original=fl.name;
+          f.a.samples[grade].script=rec;
+          touch(f.u,f.a);
+          say(bandDone(f.a.samples[grade]) ? (grade+" sample complete")
+            : (grade+" script uploaded. Add the marker's feedback to complete this band."));
+        })
+        .catch(function(e){ say("Upload failed: "+(e&&e.message?e.message:e)) });
+    };
+    inp.click();
+  }
+
+  /* Feedback for a band: either typed comments or the marked rubric sheet. */
+  function feedbackModal(unitId,atId,grade,kind){
+    var f=find(unitId,atId); if(!f.a) return;
+    var a=f.a, u=f.u;
+    if(!a.samples[grade]) a.samples[grade]=blankBand();
+    var band=a.samples[grade], fb=band.feedback, pending=null;
+    var isText=kind==="text", label=isText?"Feedback text":"Marked rubric sheet";
+
+    var inner="";
+    if(fb){
+      inner+='<div class="have"><div class="m">Currently held, as '+esc(fb.kind==="text"?"text":"file")+'</div>'
+        +esc(fb.kind==="text"?fb.text.slice(0,220)+(fb.text.length>220?"...":""):fb.name)+'</div>';
+    }
+    if(isText){
+      inner+='<div class="f"><label for="fbt">Marker’s feedback for the '+esc(grade)+' sample</label>'
+        +'<textarea id="fbt" placeholder="Paste or type the feedback given to the student.">'
+        +esc(fb&&fb.kind==="text"?fb.text:"")+'</textarea>'
+        +'<p class="hint">Saved beside the script as a text file. Remove the student’s name if you paste it in.</p></div>';
+    } else {
+      inner+='<div class="drop" id="dropz">Choose the marked rubric sheet, or drop it here</div>'
+        +'<div class="f" style="margin-top:12px"><button class="btn" id="choose">Choose file</button>'
+        +'<p class="hint">Stored as <span class="mono">'
+        +esc(safe(u.code)+"_"+a.label+"_"+grade+"_Feedback")+'.ext</span> and de-identified with the script.</p></div>';
+    }
+
+    layer.innerHTML='<div class="scrim"><div class="modal" role="dialog" aria-label="'+esc(label)+'">'
+      +'<div class="mh"><h2>'+esc(grade)+' sample · '+esc(label)+'<span class="sub">'
+        +esc(u.code)+' · '+esc(a.label)+' · '+esc(a.title)+'</span></h2>'
+        +'<button class="btn" data-x="1">Close</button></div>'
+      +'<div class="mb">'+inner+'</div>'
+      +'<div class="mf">'+(fb?'<button class="btn btn-quiet left" id="rmfb">Remove feedback</button>':'')
+        +'<button class="btn" data-x="1">Cancel</button>'
+        +'<button class="btn btn-ink" id="ok">Save</button></div></div></div>';
+
+    layer.querySelectorAll("[data-x]").forEach(function(b){ b.onclick=closeLayer });
+    var rmfb=document.getElementById("rmfb");
+    if(rmfb) rmfb.onclick=function(){ band.feedback=null; closeLayer(); render(); say("Feedback removed") };
+
+    var choose=document.getElementById("choose");
+    if(choose) choose.onclick=function(){
+      var inp=document.createElement("input"); inp.type="file";
+      inp.onchange=function(){ var fl=inp.files[0]; if(!fl) return;
+        pending={name:fl.name,size:fl.size,blob:fl};
+        document.getElementById("dropz").innerHTML='<b>'+esc(fl.name)+'</b><br>'
+          +Math.max(1,Math.round(fl.size/1024))+' KB';
+      };
+      inp.click();
+    };
+    var dz=document.getElementById("dropz");
+    if(dz){
+      dz.ondragover=function(e){ e.preventDefault(); dz.style.borderColor="var(--ok)" };
+      dz.ondragleave=function(){ dz.style.borderColor="" };
+      dz.ondrop=function(e){ e.preventDefault(); dz.style.borderColor="";
+        var fl=e.dataTransfer.files[0]; if(!fl) return;
+        pending={name:fl.name,size:fl.size,blob:fl};
+        dz.innerHTML='<b>'+esc(fl.name)+'</b><br>'+Math.max(1,Math.round(fl.size/1024))+' KB';
+      };
+    }
+
+    document.getElementById("ok").onclick=function(){
+      var done=function(){
+        closeLayer(); touch(u,a);
+        say(bandDone(band) ? (grade+" sample complete")
+          : (grade+" feedback saved. Upload the marked script to complete this band."));
+      };
+      if(isText){
+        var t=document.getElementById("fbt").value.trim();
+        if(!t) return say("Type or paste the feedback first.");
+        band.feedback={kind:"text",text:t,at:new Date().toISOString()};
+        done();
+      } else {
+        if(!pending) return say("Choose the marked rubric sheet first.");
+        var nm=safe(u.code)+"_"+a.label+"_"+grade+"_Feedback"+ext(pending.name);
+        say("Uploading "+nm+"...");
+        window.ASR.putFile(u.code,a.label,"Assessment Samples/"+grade,nm,pending.blob)
+          .then(function(rec){ rec.kind="file"; rec.original=pending.name;
+                               band.feedback=rec; done() })
+          .catch(function(e){ say("Upload failed: "+(e&&e.message?e.message:e)) });
+      }
+    };
+  }
+
+  /* ---------- document editor ---------- */
+  var layer=document.getElementById("layer");
+  function closeLayer(){ layer.innerHTML="" }
+  layer.addEventListener("mousedown",function(e){ if(e.target.classList.contains("scrim")) closeLayer() });
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape") closeLayer() });
+
+  function docModal(unitId,atId,which,kind){
+    var f=find(unitId,atId); if(!f.a) return;
+    var a=f.a, u=f.u, label=which==="instructions"?"Instructions":"Rubric";
+    var it=itemOf(a,which), pending=null;
+
+    var inner="";
+    if(kind==="file"){
+      if(it.files.length){
+        inner+='<div class="filelist">'+it.files.map(function(fl,i){
+          return '<div class="filerow"><span class="src">'+(fl.remote?"Moodle":"Upload")+'</span>'
+            +'<span class="nm">'+(fl.url?'<a href="'+esc(fl.url)+'" target="_blank" rel="noopener">'+esc(fl.name)+'</a>':esc(fl.name))+'</span>'
+            +'<button class="btn btn-quiet" data-rmf="'+i+'">Remove</button></div>';
+        }).join("")+'</div>';
+      }
+      inner+='<div class="drop" id="dropz">Choose a file, or drop one here</div>'
+        +'<div class="f" style="margin-top:12px"><button class="btn" id="choose">Choose file</button>'
+        +'<p class="hint">Uploads are stored as <span class="mono">'
+        +esc(safe(u.code)+"_"+a.label+"_"+label)+'.ext</span>. Files shown as Moodle stay where they are and are recorded as links.</p></div>';
+    } else if(kind==="text"){
+      inner+='<div class="f"><label for="txt">'+esc(label)+' text</label>'
+        +'<textarea id="txt" placeholder="Paste the full text here.">'+esc(it.text)+'</textarea>'
+        +'<p class="hint">'+(it.text?"Collected from the Moodle assessment description. Edit freely.":"Saved with the unit as a text file.")+'</p></div>';
+    } else {
+      inner+='<div class="f"><label for="lnk">Moodle link</label>'
+        +'<input id="lnk" type="url" inputmode="url" value="'+esc(it.link)+'" '
+        +'placeholder="https://moodle.cqu.edu.au/mod/assign/view.php?id=...">'
+        +'<p class="hint">Paste the link and press Enter to check it.</p><div id="linkout"></div></div>';
+    }
+
+    layer.innerHTML='<div class="scrim"><div class="modal" role="dialog" aria-label="'+esc(label)+'">'
+      +'<div class="mh"><h2>'+esc(label)+' &middot; '+esc(METHOD[kind])+'<span class="sub">'
+        +esc(u.code)+' &middot; '+esc(a.label)+' &middot; '+esc(a.title)+'</span></h2>'
+        +'<button class="btn" data-x="1">Close</button></div>'
+      +'<div class="mb">'+inner+'</div>'
+      +'<div class="mf">'+(has(it,kind)?'<button class="btn btn-quiet left" id="rm">Clear '+esc(METHOD[kind].toLowerCase())+'</button>':'')
+        +'<button class="btn" data-x="1">Cancel</button>'
+        +'<button class="btn btn-ink" id="ok">Save</button></div></div></div>';
+
+    layer.querySelectorAll("[data-x]").forEach(function(b){ b.onclick=closeLayer });
+    layer.querySelectorAll("[data-rmf]").forEach(function(b){
+      b.onclick=function(){ var gone=it.files.splice(parseInt(b.dataset.rmf,10),1)[0];
+        if(gone && gone.path) window.ASR.dropFile(gone.path);
+        closeLayer(); touch(u,a); say("File removed") };
+    });
+    var rm=document.getElementById("rm");
+    if(rm) rm.onclick=function(){
+      if(kind==="file"){ it.files.forEach(function(fl){ if(fl.path) window.ASR.dropFile(fl.path) });
+        it.files=[]; } else if(kind==="link") it.link=""; else it.text="";
+      closeLayer(); touch(u,a); say(label+" "+METHOD[kind].toLowerCase()+" cleared");
+    };
+
+    var choose=document.getElementById("choose");
+    if(choose) choose.onclick=function(){
+      var inp=document.createElement("input"); inp.type="file";
+      inp.onchange=function(){ var fl=inp.files[0]; if(!fl) return;
+        pending={name:fl.name,size:fl.size,blob:fl};
+        document.getElementById("dropz").innerHTML='<b>'+esc(fl.name)+'</b><br>'+Math.max(1,Math.round(fl.size/1024))+' KB';
+      };
+      inp.click();
+    };
+    var dz=document.getElementById("dropz");
+    if(dz){
+      dz.ondragover=function(e){ e.preventDefault(); dz.style.borderColor="var(--ok)" };
+      dz.ondragleave=function(){ dz.style.borderColor="" };
+      dz.ondrop=function(e){ e.preventDefault(); dz.style.borderColor="";
+        var fl=e.dataTransfer.files[0]; if(!fl) return;
+        pending={name:fl.name,size:fl.size,blob:fl};
+        dz.innerHTML='<b>'+esc(fl.name)+'</b><br>'+Math.max(1,Math.round(fl.size/1024))+' KB';
+      };
+    }
+    var lnk=document.getElementById("lnk");
+    if(lnk){
+      var show=function(){
+        var v=validUrl(lnk.value.trim());
+        document.getElementById("linkout").innerHTML = v
+          ? '<a class="linkout" href="'+esc(v)+'" target="_blank" rel="noopener">'+esc(v)+'</a>'
+            +'<p class="hint">Open it and check it is the right page.</p>'
+          : (lnk.value.trim()?'<p class="hint warn">That does not look like a web address. It should start with https://</p>':"");
+      };
+      lnk.onkeydown=function(e){ if(e.key==="Enter"){ e.preventDefault(); show() } };
+      lnk.onblur=show; if(lnk.value) show();
+    }
+
+    document.getElementById("ok").onclick=function(){
+      if(kind==="file"){
+        if(!pending) return say("Choose a file first.");
+        var nm=safe(u.code)+"_"+a.label+"_"+label
+               +(it.files.length?("_"+(it.files.length+1)):"")+ext(pending.name);
+        say("Uploading "+nm+"...");
+        window.ASR.putFile(u.code,a.label,label,nm,pending.blob)
+          .then(function(rec){ rec.original=pending.name; it.files.push(rec);
+                               closeLayer(); touch(u,a); say("Added to "+label.toLowerCase()) })
+          .catch(function(e){ say("Upload failed: "+(e&&e.message?e.message:e)) });
+      } else if(kind==="text"){
+        it.text=document.getElementById("txt").value.trim();
+        closeLayer(); touch(u,a); say(label+" text saved");
+      } else {
+        var v=validUrl(document.getElementById("lnk").value.trim());
+        if(!v) return say("A web address must start with https://");
+        it.link=v; closeLayer(); touch(u,a); say(label+" link saved");
+      }
+    };
+  }
+
+  function noteModal(unitId,atId){
+    var f=find(unitId,atId); if(!f.a) return;
+    var list=f.a.comments.map(function(c){
+      return '<div class="cmt"><div class="m">'+esc(c.author||"Unattributed")+' &middot; '
+        +esc(new Date(c.at).toLocaleString())+'</div><div class="b">'+esc(c.body)+'</div></div>' }).join("");
+    layer.innerHTML='<div class="scrim"><div class="modal" role="dialog" aria-label="Assessment notes">'
+      +'<div class="mh"><h2>Notes<span class="sub">'+esc(f.u.code)+' &middot; '+esc(f.a.label)+'</span></h2>'
+        +'<button class="btn" data-x="1">Close</button></div>'
+      +'<div class="mb">'+(list?'<div style="margin-bottom:14px">'+list+'</div>':'')
+        +'<div class="f"><label for="nAuthor">Your name</label><input id="nAuthor" value="'
+          +esc(state.view==="uc"?state.asUC:"")+'" placeholder="Who is writing this"></div>'
+        +'<div class="f"><label for="nBody">Note</label><textarea id="nBody" style="min-height:110px" '
+          +'placeholder="For example: no HD awarded this term, so the top sample is a D."></textarea></div></div>'
+      +'<div class="mf"><button class="btn" data-x="1">Cancel</button>'
+        +'<button class="btn btn-ink" id="nAdd">Add note</button></div></div></div>';
+    layer.querySelectorAll("[data-x]").forEach(function(b){ b.onclick=closeLayer });
+    document.getElementById("nAdd").onclick=function(){
+      var body=document.getElementById("nBody").value.trim();
+      if(!body) return document.getElementById("nBody").focus();
+      f.a.comments.push({id:uid(),body:body,author:document.getElementById("nAuthor").value.trim(),
+        at:new Date().toISOString()});
+      closeLayer(); touch(f.u,f.a); say("Note added");
+    };
+    document.getElementById("nBody").focus();
+  }
+
+  /* ---------- view switch and filters ---------- */
+  document.getElementById("vAdmin").onclick=function(){ state.view="admin"; state.editing=null; render() };
+  document.getElementById("vUC").onclick=function(){ state.view="uc"; state.editing=null; render() };
+  document.getElementById("asuc").onchange=function(){ state.asUC=this.value; render() };
+  document.getElementById("q").oninput=function(){ state.q=this.value; render() };
+  document.getElementById("fuc").onchange=function(){ state.uc=this.value; render() };
+  document.getElementById("fst").onchange=function(){ state.st=this.value; render() };
+
+  document.getElementById("addUnit").onclick=function(){
+    layer.innerHTML='<div class="scrim"><div class="modal" role="dialog" aria-label="Add a unit">'
+      +'<div class="mh"><h2>Add a unit</h2><button class="btn" data-x="1">Close</button></div>'
+      +'<div class="mb"><div class="r2">'
+        +'<div class="f"><label for="uCode">Unit code</label><input id="uCode" class="mono" placeholder="PPMP20013"></div>'
+        +'<div class="f"><label for="uN">Assessments</label><input id="uN" type="number" min="1" max="8" value="3"></div></div>'
+        +'<div class="f"><label for="uName">Unit name</label><input id="uName" placeholder="Sustainability in Projects"></div>'
+        +'<div class="f"><label for="uUC">Unit coordinator</label><input id="uUC" placeholder="Full name">'
+        +'<p class="hint">Folders are created as UNITCODE &rsaquo; AT1, AT2 and so on.</p></div></div>'
+      +'<div class="mf"><button class="btn" data-x="1">Cancel</button>'
+        +'<button class="btn btn-ink" id="uAdd">Add unit</button></div></div></div>';
+    layer.querySelectorAll("[data-x]").forEach(function(b){ b.onclick=closeLayer });
+    document.getElementById("uAdd").onclick=function(){
+      var code=document.getElementById("uCode").value.trim();
+      if(!code) return document.getElementById("uCode").focus();
+      var n=Math.max(1,Math.min(8,parseInt(document.getElementById("uN").value,10)||3));
+      var ats=[];
+      for(var i=1;i<=n;i++) ats.push({id:"AT"+i,label:"AT"+i,title:"",weight:"",isQuiz:false,
+        moodleUrl:"",moodle:null,instructions:blankItem(),rubric:blankItem(),
+        samples:GRADES.reduce(function(o,g){o[g]=blankBand();return o},{}),comments:[]});
+      var nu={id:safe(code).toUpperCase(),code:safe(code).toUpperCase(),
+        name:document.getElementById("uName").value.trim(),
+        uc:document.getElementById("uUC").value.trim(),ucEmail:"",ucEmails:[],assessments:ats};
+      state.units.push(nu);
+      closeLayer(); render();
+      if(state.live) window.ASR.saveUnit(nu).then(function(){ say(nu.code+" added") })
+        .catch(function(e){ say("Not saved: "+(e&&e.message?e.message:e)) });
+      else say("Not saved: the register is read-only in this session.");
+    };
+    document.getElementById("uCode").focus();
+  };
+
+  /* ---------- exports ---------- */
+  function partsOf(it){
+    var p=[];
+    if(has(it,"file")) p.push(it.files.length+" file"+(it.files.length>1?"s":""));
+    if(has(it,"link")) p.push("link");
+    if(has(it,"text")) p.push("text");
+    return p.length?p.join(" + "):"No";
+  }
+
+  document.getElementById("xls").onclick=function(){
+    if(inFrame) return say("Downloads are blocked in this preview. The Excel export works in the installed app.");
+    if(!state.live) say("Note: this export reflects the read-only seed, not the live register.");
+    var detail=[],summary=[];
+    state.units.forEach(function(u){
+      var h=0,need=0;
+      u.assessments.forEach(function(a){
+        h+=Math.min(held(a),needOf(a)); need+=needOf(a);
+        var row={"Term":"T2 2026","Unit code":u.code,"Unit name":u.name,"Unit coordinator":u.uc,
+          "Assessment":a.label,"Assessment title":a.title,"Weighting":a.weight,
+          "Type":a.isQuiz?"Quiz":"Written","Moodle activity":a.moodleUrl,
+          "Instructions":partsOf(a.instructions),
+          "Instruction files":a.instructions.files.map(function(f){return f.name}).join("  "),
+          "Marking rubric":a.isQuiz?"Not required":partsOf(a.rubric),
+          "Rubric files":a.isQuiz?"":a.rubric.files.map(function(f){return f.name}).join("  ")};
+        GRADES.forEach(function(g){
+          var b=a.samples[g];
+          row[g]=a.isQuiz?"n/a":(bandDone(b)?"Script + feedback"
+            :(b&&b.script?"Script only":(b&&b.feedback?"Feedback only":"No")));
+        });
+        row["Samples held"]=a.isQuiz?"n/a":(held(a)+" of "+REQUIRED+" required");
+        row["Quiz link"]=a.isQuiz?(a.moodle?a.moodle.url:"Not supplied"):"";
+        row["Status"]=LABEL[stat(a)];
+        row["Latest note"]=a.comments.length?a.comments[a.comments.length-1].body:"";
+        detail.push(row);
+      });
+      summary.push({"Term":"T2 2026","Unit code":u.code,"Unit name":u.name,"Unit coordinator":u.uc,
+        "Assessments":u.assessments.length,
+        "With instructions":u.assessments.filter(function(a){return any(a.instructions)}).length,
+        "Rubric required":u.assessments.filter(function(a){return !a.isQuiz}).length,
+        "With rubric":u.assessments.filter(function(a){return !a.isQuiz && any(a.rubric)}).length,
+        "Complete":u.assessments.filter(function(a){return stat(a)==="ok"}).length,
+        "Items held":h,"Items required":need,
+        "Completion":need?Math.round(h/need*100)+"%":"0%"});
+    });
+    var wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(detail),"Assessment detail");
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(summary),"Unit summary");
+    XLSX.writeFile(wb,"Assessment_Sample_Register_T2_2026.xlsx");
+    say("Excel report downloaded");
+  };
+
+  /* Folder plan, per assessment:
+       UNITCODE / AT# / Instructions / ...text or link as a .txt, plus files
+                      / Rubric       / ...the same
+                      / Assessment Samples / HD / script + feedback
+                                           / D  / ...
+     A band folder is only created when something was uploaded into it. */
+  function harvest(){
+    var out=[];
+    state.units.forEach(function(u){ u.assessments.forEach(function(a){
+      var root=safe(u.code)+"/"+a.label;
+      var stem=safe(u.code)+"_"+a.label;
+
+      ["instructions","rubric"].forEach(function(which){
+        if(which==="rubric" && a.isQuiz) return;   // a quiz has no rubric
+        var it=itemOf(a,which), label=which==="instructions"?"Instructions":"Rubric";
+        var dir=root+"/"+label, notes=[];
+        it.files.forEach(function(fl){
+          if(fl.remote) notes.push("Moodle file: "+fl.name+"\n  "+fl.url);
+          else out.push({dir:dir,name:fl.name,path:fl.path,blob:fl.blob});
+        });
+        if(it.link) notes.push("Moodle link:\n  "+it.link);
+        if(it.text) notes.push("Text supplied in the register:\n\n"+it.text);
+        if(notes.length) out.push({dir:dir,name:stem+"_"+label+".txt",
+          blob:new Blob([stem+" "+label+"\n\n"+notes.join("\n\n")],{type:"text/plain"})});
+      });
+
+      if(a.isQuiz && a.moodle){
+        out.push({dir:root+"/Assessment Samples",name:stem+"_Quiz_Link.txt",
+          blob:new Blob([stem+" online quiz\n\nNo scripts are collected for a quiz.\n\n"
+            +"Moodle activity:\n  "+a.moodle.url+"\n"],{type:"text/plain"})});
+      }
+
+      if(a.comments && a.comments.length){
+        out.push({dir:root, name:stem+"_Notes.txt", blob:new Blob([
+          stem+" moderation notes\n\n"+a.comments.map(function(c){
+            return "["+new Date(c.at).toLocaleString()+"]  "+(c.author||"Unattributed")
+                   +"\n"+c.body+"\n";
+          }).join("\n")], {type:"text/plain"})});
+      }
+
+      GRADES.forEach(function(g){
+        var b=a.samples[g];
+        if(!bandStarted(b)) return;                 // empty bands get no folder
+        var dir=root+"/Assessment Samples/"+g;
+        if(b.script) out.push({dir:dir,name:b.script.name,path:b.script.path,blob:b.script.blob});
+        if(b.feedback){
+          if(b.feedback.kind==="file")
+            out.push({dir:dir,name:b.feedback.name,path:b.feedback.path,blob:b.feedback.blob});
+          else out.push({dir:dir,name:stem+"_"+g+"_Feedback.txt",
+            blob:new Blob([stem+" "+g+" sample, marker's feedback\n\n"+b.feedback.text],
+              {type:"text/plain"})});
+        }
+      });
+    })});
+    return out;
+  }
+
+  async function materialise(list){
+    /* A harvested entry either carries its bytes already (text written by the
+       register) or names a file in Cloud Storage that has to be fetched. */
+    var out=[], missing=0;
+    for(var i=0;i<list.length;i++){
+      var f=list[i];
+      if(f.blob){ out.push(f); continue }
+      if(!f.path){ missing++; continue }
+      try{ out.push({dir:f.dir,name:f.name,blob:await window.ASR.getFile(f.path)}) }
+      catch(e){ missing++ }
+    }
+    if(missing) say(missing+" file(s) could not be fetched and were left out.");
+    return out;
+  }
+
+  document.getElementById("save").onclick=async function(){
+    var list=harvest();
+    if(!list.length) return say("Nothing to save yet.");
+    if(inFrame) return say("Saving files is blocked in this preview. It works in the installed app.");
+    say("Fetching "+list.length+" file(s)...");
+    list=await materialise(list);
+    if(!list.length) return say("Nothing could be fetched.");
+    if(window.showDirectoryPicker){
+      window.showDirectoryPicker({mode:"readwrite"}).then(function(root){
+        var i=0;
+        (function next(){
+          if(i>=list.length){ markExported(list.length);
+            return say(list.length+" files written into your folder. Keep this copy.") }
+          var f=list[i++], dir=Promise.resolve(root);
+          f.dir.split("/").forEach(function(part){
+            dir=dir.then(function(d){ return d.getDirectoryHandle(part,{create:true}) });
+          });
+          dir.then(function(d){ return d.getFileHandle(f.name,{create:true}) })
+             .then(function(fh){ return fh.createWritable() })
+             .then(function(w){ return w.write(f.blob).then(function(){ return w.close() }) })
+             .then(next)
+             .catch(function(){ say("Could not finish writing. Check the folder permissions and try again.") });
+        })();
+      }).catch(function(err){ if(err && err.name!=="AbortError") zip(list) });
+    } else { zip(list) }
+  };
+
+  function zip(list){
+    var z=new JSZip();
+    list.forEach(function(f){ z.folder(f.dir).file(f.name,f.blob) });
+    z.generateAsync({type:"blob",compression:"STORE"}).then(function(blob){
+      var a=document.createElement("a");
+      a.href=URL.createObjectURL(blob);
+      a.download="Assessment_Samples_T2_2026.zip";
+      a.click(); URL.revokeObjectURL(a.href);
+      markExported(list.length);
+      say("Downloaded as a zip holding the same folder structure. Keep this copy.");
+    });
+  }
+
+  /* ---------- boot ---------- */
+  /* The register is one copy until it is downloaded. The age of the last
+     full download is kept on this device and shown to the administrator, so
+     a long gap is visible rather than discovered at the worst moment. */
+  function exportAge(){
+    try{
+      var t=localStorage.getItem("asr_last_export");
+      if(!t) return null;
+      return Math.floor((Date.now()-parseInt(t,10))/86400000);
+    }catch(e){ return null }
+  }
+  function markExported(n){
+    try{ localStorage.setItem("asr_last_export", String(Date.now())); }catch(e){}
+    banner();
+  }
+
+  var gate=document.getElementById("gate");
+  function showGate(html){ gate.innerHTML=html; gate.hidden=false; }
+  function hideGate(){ gate.hidden=true; }
+
+  function banner(){
+    var el=document.getElementById("liveflag");
+    if(!el) return;
+    if(state.live){
+      var age=exportAge();
+      var stale=(age===null||age>=14);
+      el.className="live "+(stale?"warn":"ok");
+      el.innerHTML="<b>Live.</b> Saving to "+esc(window.ASR.CONFIG.term)
+        +" as "+esc(state.who||"")+". "
+        +(state.view==="admin"
+          ? ("Last full download: "+(age===null?"never"
+              :(age===0?"today":(age===1?"yesterday":(age+" days ago"))))
+             +(stale?" — take a copy before you lose more than a fortnight."
+                    :"."))
+          : "");
+    } else {
+      el.className="live warn";
+      el.innerHTML="<b>Read-only.</b> "+esc(state.note||"The register has not been loaded, so nothing can be saved.");
+    }
+  }
+
+  async function boot(){
+    state.units=seedUnits(); render();
+    if(!window.ASR.configured()){
+      state.note="No database settings have been filled in yet, so this is the built-in copy.";
+      banner(); return;
+    }
+    window.ASR.start();
+    window.ASR.onAuthStateChanged(window.ASR.Store.auth, async function(user){
+      if(!user){
+        var who=window.ASR.whoAmI();
+        showGate('<div class="gatebox"><h2>Assessment Sample Register</h2>'
+          +'<p>Term 2, 2026. Enter the access code you were given.</p>'
+          +'<div class="f"><label for="gname">Your name</label>'
+          +'<input id="gname" value="'+esc(who)+'" placeholder="So uploads can be attributed"></div>'
+          +'<div class="f"><label for="grole">Signing in as</label>'
+          +'<select id="grole"><option value="coordinator">Unit coordinator</option>'
+          +'<option value="admin">Course administrator</option></select></div>'
+          +'<div class="f"><label for="gcode">Access code</label>'
+          +'<input id="gcode" type="password" autocomplete="current-password"></div>'
+          +'<button class="btn btn-ok" id="gsign">Open the register</button>'
+          +'<p class="hint" id="gerr"></p></div>');
+        var err=document.getElementById("gerr");
+        var go=function(){
+          var nm=document.getElementById("gname").value.trim();
+          var code=document.getElementById("gcode").value;
+          if(!nm) return err.textContent="Please put your name in, so uploads can be attributed.";
+          if(!code) return err.textContent="Enter the access code.";
+          window.ASR.setWhoAmI(nm);
+          err.textContent="Checking...";
+          window.ASR.signInWithCode(document.getElementById("grole").value, code)
+            .catch(function(x){
+              var m=String(x&&x.code||x);
+              err.textContent = /wrong-password|invalid-credential|user-not-found/.test(m)
+                ? "That code was not accepted for this role."
+                : (/too-many-requests/.test(m)
+                   ? "Too many attempts. Wait a few minutes and try again."
+                   : (x&&x.message?x.message:m));
+            });
+        };
+        document.getElementById("gsign").onclick=go;
+        document.getElementById("gcode").onkeydown=function(e){ if(e.key==="Enter") go() };
+        state.live=false; banner(); return;
+      }
+      var role=window.ASR.roleOf(user);
+      if(!role){
+        showGate('<div class="gatebox"><h2>Signed in with an unknown account</h2>'
+          +'<p>This sign-in does not match either access code.</p>'
+          +'<button class="btn" id="gout">Sign out</button></div>');
+        document.getElementById("gout").onclick=function(){ window.ASR.finishSignOut() };
+        return;
+      }
+      hideGate();
+      window.ASR.Store.user=user;
+      window.ASR.Store.role=role;
+      window.ASR.setWhoAmI(window.ASR.whoAmI());
+      state.who=window.ASR.Store.who+" ("+role+")";
+      state.view=(role==="admin")?"admin":"uc";
+      try{
+        var units=await window.ASR.load();
+        state.live=true;
+        if(!units.length){
+          state.note="The register is empty for this term.";
+          if(window.ASR.Store.role==="admin"){
+            var seedBtn=document.getElementById("seedbtn");
+            if(seedBtn) seedBtn.hidden=false;
+          }
+        } else {
+          state.units=units;
+        }
+      }catch(e){
+        state.live=false;
+        state.note="The register could not be loaded ("+(e&&e.message?e.message:e)
+                   +"), so nothing can be saved in this session.";
+      }
+      render(); banner();
+    });
+  }
+
+  var sb=document.getElementById("seedbtn");
+  if(sb) sb.onclick=async function(){
+    if(!state.live) return say("Cannot seed: the database has not answered.");
+    if(window.ASR.Store.role!=="admin") return say("Only the administrator code can set up the register.");
+    var source=DATA;
+    if(!source.length){
+      say("Choose the register file (register_data.json).");
+      try{ source=await pickRegisterFile(); }
+      catch(e){ return say(e&&e.message?e.message:String(e)) }
+    }
+    sb.disabled=true; say("Writing "+source.length+" unit(s) for the first time...");
+    try{
+      await window.ASR.seed(seedUnitsFrom(source));
+      state.units=await window.ASR.load();
+      sb.hidden=true; render(); banner(); say("Register created.");
+    }catch(e){ sb.disabled=false; say("Could not create the register: "+(e&&e.message?e.message:e)) }
+  };
+
+  var so=document.getElementById("signout");
+  if(so) so.onclick=function(){ window.ASR.finishSignOut().then(function(){ location.reload() }) };
+
+  boot();
+})();
+</script>
