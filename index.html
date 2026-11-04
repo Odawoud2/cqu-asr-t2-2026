@@ -545,7 +545,7 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
   function any(item){ return has(item,"file")||has(item,"link")||has(item,"text") }
   /* Files the register holds, against files it merely points at. */
   function heldFiles(it){ return (it&&it.files||[]).filter(function(f){ return !f.remote }) }
-  function linkedFiles(it){ return (it&&it.files||[]).filter(function(f){ return f.remote }) }
+  function linkedFiles(it){ return (it&&it.moodleRefs)||[] }
   /* Instructions or a rubric count as supplied only when their text or an
      actual file is stored here. A Moodle address is a pointer, and the
      unit site is rolled over long before anyone audits this register. */
@@ -1449,8 +1449,13 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
         var units=await window.ASR.load();
         units.forEach(function(u){ (u.assessments||[]).forEach(function(a){
           ["instructions","rubric"].forEach(function(w){
-            var it=a[w];
-            if(it && it.files) it.files=it.files.filter(function(f){ return !f.remote });
+            var it=a[w]; if(!it || !it.files) return;
+            /* Files holds files. What came from Moodle is a name and an
+               address with no bytes, so it moves aside: it still records
+               which document this assessment is waiting for, which is what
+               the import matches a downloaded file against. */
+            it.moodleRefs=it.files.filter(function(f){ return f.remote });
+            it.files=it.files.filter(function(f){ return !f.remote });
           });
         })});
         if(!units.length){
@@ -1502,15 +1507,41 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
     }
   }
 
+  /* Chrome appends " (1)" when a name is already in the folder, and the same
+     document is often attached to several assessments, so those copies are
+     the same bytes under different names. */
+  function normName(n){
+    return String(n).replace(/\s*\(\d+\)(?=\.[^.]+$)/,"").trim().toLowerCase();
+  }
+
+  /* Which assessments are waiting for a document of each name. Built from the
+     references collected when the register was created, so a folder of files
+     with their original names can be placed without any folder structure. */
+  function expectedByName(){
+    var map={};
+    state.units.forEach(function(u){ (u.assessments||[]).forEach(function(a){
+      [["instructions","Instructions"],["rubric","Rubric"]].forEach(function(pair){
+        var it=a[pair[0]]; if(!it) return;
+        (it.moodleRefs||[]).forEach(function(r){
+          var k=normName(r.name);
+          (map[k]=map[k]||[]).push({u:u, a:a, cat:pair[1]});
+        });
+      });
+    })});
+    return map;
+  }
+
   function planImport(files){
-    var docs=[], bands=[], di={}, bi={}, ignored=0;
+    var docs=[], bands=[], loose=[], di={}, bi={}, ignored=0;
     files.forEach(function(f){
       var parts=f.path.split("/"), i=-1, cat=null;
       for(var c=0;c<CATS.length;c++){
         var at=parts.indexOf(CATS[c]);
         if(at>-1){ i=at; cat=CATS[c]; break }
       }
-      if(!cat || i<2){ ignored++; return }
+      /* No recognised category folder: keep it as a loose file to be placed
+         by name rather than discarding it. */
+      if(!cat || i<2){ loose.push({name:parts[parts.length-1], entry:f.entry}); return }
       var unit=parts[i-2], label=parts[i-1], name=parts[parts.length-1];
       if(name.charAt(0)==="."){ ignored++; return }
       if(cat==="Assessment Samples"){
@@ -1532,7 +1563,8 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
     function byName(a,b){ return a.name.localeCompare(b.name) }
     bands.forEach(function(g){ g.scripts.sort(byName) });
     docs.forEach(function(g){ g.files.sort(byName) });
-    return {docs:docs, bands:bands, ignored:ignored};
+    loose=loose.filter(function(f){ return f.name.charAt(0)!=="." });
+    return {docs:docs, bands:bands, loose:loose, ignored:ignored};
   }
 
   function locate(unit, label){
@@ -1557,6 +1589,31 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
         ok.push({type:"doc", g:g, u:f.u, a:f.a});
       else unmatched.push(g.unit+" "+g.at+" "+g.cat);
     });
+
+    /* Loose files are placed by name. One document can be attached to several
+       assessments, in which case the same bytes go to each of them. */
+    var exp=expectedByName(), bucket={}, placed=0, seenLoose={};
+    (plan.loose||[]).filter(function(f){
+      /* The same document downloaded twice arrives as "name" and "name (1)".
+         They are the same bytes, so only the first is used. */
+      var k=normName(f.name);
+      if(seenLoose[k]) return false;
+      seenLoose[k]=1; return true;
+    }).forEach(function(f){
+      var dests=exp[normName(f.name)];
+      if(!dests || !dests.length){ unmatched.push(f.name); return }
+      placed++;
+      dests.forEach(function(d){
+        var k=d.u.code+"|"+d.a.label+"|"+d.cat;
+        if(!bucket[k]){
+          bucket[k]={type:"doc", u:d.u, a:d.a,
+                     g:{unit:d.u.code, at:d.a.label, cat:d.cat, files:[]}};
+          ok.push(bucket[k]);
+        }
+        bucket[k].g.files.push(f);
+      });
+    });
+    unmatched = unmatched.filter(function(n,i,arr){ return arr.indexOf(n)===i });
     ok.sort(function(x,y){
       return (x.u.code+x.a.label+(x.g.band||x.g.cat))
         .localeCompare(y.u.code+y.a.label+(y.g.band||y.g.cat)) });
