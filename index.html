@@ -1344,11 +1344,8 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
     window.ASR.start();
     window.ASR.onAuthStateChanged(window.ASR.Store.auth, async function(user){
       if(!user){
-        var who=window.ASR.whoAmI();
         showGate('<div class="gatebox"><h2>Assessment Sample Register</h2>'
           +'<p>Term 2, 2026. Enter the access code you were given.</p>'
-          +'<div class="f"><label for="gname">Your name</label>'
-          +'<input id="gname" value="'+esc(who)+'" placeholder="So uploads can be attributed"></div>'
           +'<div class="f"><label for="grole">Signing in as</label>'
           +'<select id="grole"><option value="coordinator">Unit coordinator</option>'
           +'<option value="admin">Course administrator</option></select></div>'
@@ -1358,11 +1355,8 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
           +'<p class="hint" id="gerr"></p></div>');
         var err=document.getElementById("gerr");
         var go=function(){
-          var nm=document.getElementById("gname").value.trim();
           var code=document.getElementById("gcode").value;
-          if(!nm) return err.textContent="Please put your name in, so uploads can be attributed.";
           if(!code) return err.textContent="Enter the access code.";
-          window.ASR.setWhoAmI(nm);
           err.textContent="Checking...";
           window.ASR.signInWithCode(document.getElementById("grole").value, code)
             .catch(function(x){
@@ -1389,8 +1383,10 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
       hideGate();
       window.ASR.Store.user=user;
       window.ASR.Store.role=role;
-      window.ASR.setWhoAmI(window.ASR.whoAmI());
-      state.who=window.ASR.Store.who+" ("+role+")";
+      /* A shared code cannot identify a person, so uploads are stamped with
+         the role that was used and the time, and nothing more. */
+      window.ASR.setWhoAmI(role==="admin"?"administrator":"coordinator");
+      state.who=window.ASR.Store.who;
       state.view=(role==="admin")?"admin":"uc";
       try{
         var units=await window.ASR.load();
