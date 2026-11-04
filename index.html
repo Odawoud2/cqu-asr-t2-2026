@@ -125,6 +125,7 @@ tr.uhead td{background:var(--surface-2);border-top:1px solid var(--rule);border-
 .band.part .bandtop{color:var(--part)}
 .band.done .bandtop{color:var(--ok)}
 .xtra{font-size:10px;color:var(--ink-soft);margin-left:3px;vertical-align:super}
+.notheld{font-size:10.5px;color:var(--part);margin-top:2px;line-height:1.3}
 .fbrow{display:flex;gap:3px;justify-content:center}
 .fb{width:22px;height:22px;border:1px solid var(--rule);background:var(--surface);border-radius:2px;
   display:inline-flex;align-items:center;justify-content:center;color:var(--ink-soft);padding:0}
@@ -542,6 +543,13 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
     return kind==="file"?item.files.length>0:(kind==="link"?!!item.link:!!item.text);
   }
   function any(item){ return has(item,"file")||has(item,"link")||has(item,"text") }
+  /* Files the register holds, against files it merely points at. */
+  function heldFiles(it){ return (it&&it.files||[]).filter(function(f){ return !f.remote }) }
+  function linkedFiles(it){ return (it&&it.files||[]).filter(function(f){ return f.remote }) }
+  /* Instructions or a rubric count as supplied only when their text or an
+     actual file is stored here. A Moodle address is a pointer, and the
+     unit site is rolled over long before anyone audits this register. */
+  function anyHeld(item){ return !!item && (heldFiles(item).length>0 || !!item.text) }
 
   /* Register built from the Moodle unit sites for Term 2, 2026. */
   var state={ view:(PAGE_ROLE==="admin"?"admin":"uc"), asUC:"", q:"", uc:"", st:"", editing:null, units:[],
@@ -613,11 +621,11 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
   /* A quiz has no marking rubric and no scripts to sample, so it is asked
      for its instructions and a verified Moodle link, and nothing else. */
   function checklist(a){
-    var rows=[{k:"Assessment instructions",ok:any(a.instructions)}];
+    var rows=[{k:"Assessment instructions",ok:anyHeld(a.instructions)}];
     if(a.isQuiz){
       rows.push({k:"Moodle quiz link",ok:!!a.moodle});
     } else {
-      rows.push({k:"Assessment rubric",ok:any(a.rubric)});
+      rows.push({k:"Assessment rubric",ok:anyHeld(a.rubric)});
       rows.push({k:held(a)+" of "+REQUIRED+" assessment samples",ok:held(a)>=REQUIRED});
     }
     return rows;
@@ -662,11 +670,15 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
         +' aria-label="'+esc(METHOD[k])+'" data-act="doc" data-u="'+u.id+'" data-a="'+a.id+'"'
         +' data-w="'+which+'" data-k="'+k+'">'+ICON[k]+badge+'</button>';
     }).join("")+'</div>';
-    var bits=[];
-    if(has(it,"file")) bits.push(it.files.length+(it.files.length>1?" files":" file"));
-    if(has(it,"link")) bits.push("link");
+    var bits=[], hf=heldFiles(it).length, lf=linkedFiles(it).length;
+    if(hf) bits.push(hf+(hf>1?" files":" file"));
     if(has(it,"text")) bits.push(Math.round(it.text.length/100)/10+"k chars");
     if(bits.length) h+='<div class="held">'+esc(bits.join(" · "))+'</div>';
+    var ext=[];
+    if(lf) ext.push(lf+(lf>1?" files":" file"));
+    if(has(it,"link")) ext.push("link");
+    if(ext.length) h+='<div class="notheld">'+esc(ext.join(" · "))
+      +' on Moodle, not held here</div>';
     return h;
   }
 
@@ -1154,10 +1166,11 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
 
   /* ---------- exports ---------- */
   function partsOf(it){
-    var p=[];
-    if(has(it,"file")) p.push(it.files.length+" file"+(it.files.length>1?"s":""));
-    if(has(it,"link")) p.push("link");
-    if(has(it,"text")) p.push("text");
+    var p=[], hf=heldFiles(it).length, lf=linkedFiles(it).length;
+    if(hf) p.push(hf+" file"+(hf>1?"s":"")+" held");
+    if(has(it,"text")) p.push("text held");
+    if(lf) p.push(lf+" Moodle file"+(lf>1?"s":"")+" NOT held");
+    if(has(it,"link")) p.push("Moodle link only");
     return p.length?p.join(" + "):"No";
   }
 
