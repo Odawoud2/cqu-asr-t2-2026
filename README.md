@@ -91,10 +91,20 @@ people out is the rules plus the codes.
 
 ## 7. Deploy
 
-Currently deployed from GitHub Pages at
-<https://odawoud2.github.io/cqu-asr-t2-2026/>, served from `main` at the
-repository root as `index.html`. A push to `main` republishes within a minute
-or two.
+Deployed from GitHub Pages, served from `main` at the repository root. A push
+to `main` republishes within a minute or two. There are two addresses:
+
+| Page | Address | Who gets it |
+|---|---|---|
+| Coordinator | <https://odawoud2.github.io/cqu-asr-t2-2026/> | the unit coordinators |
+| Administrator | <https://odawoud2.github.io/cqu-asr-t2-2026/admin.html> | you |
+
+These are separate documents, not one page with a switch. The role is fixed
+when each page is built, so the register-wide tools are absent from the
+coordinator page rather than hidden in it, and each page signs in against one
+account only. A code entered on the wrong page is refused and the reader is
+pointed at the other address. Both addresses are public, so what keeps people
+out is the codes, not the obscurity of `admin.html`.
 
 `odawoud2.github.io` is already in Authentication → Settings → Authorized
 domains. Any other host has to be added there too, or sign-in is refused.
@@ -112,7 +122,17 @@ domains. Any other host has to be added there too, or sign-in is refused.
    sign-in; keeping it in a file you supply once means the instruction text only
    ever exists behind the codes.
 3. The banner should turn green and read **Live**.
-4. Send the coordinator code round with the link.
+4. Load the samples already collected, if you have not: press **Import
+   collected samples** and choose the folder holding them. It expects
+   `UNITCODE/AT#/Assessment Samples/BAND/`, which is the layout the
+   de-identification run already produces, so point it at
+   `ASR_collected_samples` (or at `ASR_PPMP20007` and `ASR_PPMP20008` in
+   turn). It lists what it found and waits for confirmation before uploading
+   anything, names any band with no marker feedback, and skips folders it
+   cannot match to an assessment rather than guessing. Running it again
+   replaces what is in those bands.
+5. Send the coordinator code round with the coordinator link. Keep the
+   administrator address to yourself.
 
 ---
 
@@ -160,10 +180,15 @@ folder structure to a folder you pick:
 ```
 PPMP20008/AT3/Instructions/PPMP20008_AT3_Instructions.txt
 PPMP20008/AT3/Rubric/PPMP20008_AT3_Rubric.txt
-PPMP20008/AT3/Assessment Samples/HD/PPMP20008_AT3_HD.docx
+PPMP20008/AT3/Assessment Samples/HD/PPMP20008_AT3_HD.xlsx
+PPMP20008/AT3/Assessment Samples/HD/PPMP20008_AT3_HD_2.docx
+PPMP20008/AT3/Assessment Samples/HD/PPMP20008_AT3_HD_3.pptx
 PPMP20008/AT3/Assessment Samples/HD/PPMP20008_AT3_HD_Feedback.xlsx
 PPMP20008/AT3/PPMP20008_AT3_Notes.txt
 ```
+
+A submission that is several files keeps all of them: the first is the script
+and the rest sit beside it, numbered `_2`, `_3` and so on.
 
 Every piece of typed text becomes a text file in the folder it belongs to:
 instruction text, rubric text, Moodle links, a band's written feedback, and the
