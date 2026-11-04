@@ -276,7 +276,7 @@ tr.uhead td{background:var(--surface-2);border-top:1px solid var(--rule);border-
     <span class="gap"></span>
     <span id="adminTools">
       <button class="btn" id="addUnit">Add unit</button>
-      <button class="btn" id="importbtn">Import collected samples</button>
+      <button class="btn" id="importbtn">Import collected files</button>
       <button class="btn" id="xls">Export to Excel</button>
       <button class="btn btn-ok" id="save">Save files to my computer</button>
       <button class="btn" id="seedbtn" hidden>Set up this term</button>
@@ -1481,13 +1481,17 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
   }
 
 
-  /* ---------- importing samples collected before the register existed ----------
-     Expected layout, which is what the de-identification run already produces:
-       <any folder>/UNITCODE/AT#/Assessment Samples/BAND/FILE.ext
-     A file whose name ends in _Feedback.<ext> is the marker's feedback for that
-     band; the rest are the submission itself, the first being the script and
-     any others kept beside it. Nothing is guessed: a folder that does not match
-     a unit and assessment already in the register is skipped and reported. */
+  /* ---------- importing material collected outside the register ----------
+     Expected layout, which is exactly what Save files to my computer writes:
+       <any folder>/UNITCODE/AT#/Instructions/FILE
+       <any folder>/UNITCODE/AT#/Rubric/FILE
+       <any folder>/UNITCODE/AT#/Assessment Samples/BAND/FILE
+     Within a band, a file ending _Feedback.<ext> is the marker's feedback and
+     the rest are the submission, the first of them being the script. Nothing
+     is guessed: a folder that does not match a unit and assessment already in
+     the register is skipped and reported rather than invented. */
+  var CATS = ["Instructions", "Rubric", "Assessment Samples"];
+
   async function walkInto(handle, prefix, out){
     for await (var entry of handle.values()){
       var p = prefix ? prefix+"/"+entry.name : entry.name;
@@ -1497,39 +1501,77 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
   }
 
   function planImport(files){
-    var groups=[], index={}, ignored=0;
+    var docs=[], bands=[], di={}, bi={}, ignored=0;
     files.forEach(function(f){
-      var parts=f.path.split("/");
-      var i=parts.indexOf("Assessment Samples");
-      if(i<2 || parts.length!==i+3){ ignored++; return }
-      var unit=parts[i-2], at=parts[i-1], band=parts[i+1], name=parts[i+2];
-      if(name.charAt(0)==="." || GRADES.indexOf(band)<0){ ignored++; return }
-      var key=unit+"|"+at+"|"+band;
-      if(!index[key]){
-        index[key]={unit:unit, at:at, band:band, scripts:[], feedback:null};
-        groups.push(index[key]);
+      var parts=f.path.split("/"), i=-1, cat=null;
+      for(var c=0;c<CATS.length;c++){
+        var at=parts.indexOf(CATS[c]);
+        if(at>-1){ i=at; cat=CATS[c]; break }
       }
-      if(/_Feedback\.[^.]+$/i.test(name)) index[key].feedback={name:name, entry:f.entry};
-      else index[key].scripts.push({name:name, entry:f.entry});
+      if(!cat || i<2){ ignored++; return }
+      var unit=parts[i-2], label=parts[i-1], name=parts[parts.length-1];
+      if(name.charAt(0)==="."){ ignored++; return }
+      if(cat==="Assessment Samples"){
+        if(parts.length!==i+3){ ignored++; return }
+        var band=parts[i+1];
+        if(GRADES.indexOf(band)<0){ ignored++; return }
+        var bk=unit+"|"+label+"|"+band;
+        if(!bi[bk]){ bi[bk]={unit:unit,at:label,band:band,scripts:[],feedback:null};
+                     bands.push(bi[bk]) }
+        if(/_Feedback\.[^.]+$/i.test(name)) bi[bk].feedback={name:name,entry:f.entry};
+        else bi[bk].scripts.push({name:name,entry:f.entry});
+      } else {
+        if(parts.length!==i+2){ ignored++; return }
+        var dk=unit+"|"+label+"|"+cat;
+        if(!di[dk]){ di[dk]={unit:unit,at:label,cat:cat,files:[]}; docs.push(di[dk]) }
+        di[dk].files.push({name:name,entry:f.entry});
+      }
     });
-    groups.forEach(function(g){
-      g.scripts.sort(function(a,b){ return a.name.localeCompare(b.name) });
-    });
-    return {groups:groups, ignored:ignored};
+    function byName(a,b){ return a.name.localeCompare(b.name) }
+    bands.forEach(function(g){ g.scripts.sort(byName) });
+    docs.forEach(function(g){ g.files.sort(byName) });
+    return {docs:docs, bands:bands, ignored:ignored};
+  }
+
+  function locate(unit, label){
+    var u=null, a=null;
+    state.units.forEach(function(x){ if(x.code===unit) u=x });
+    if(u) u.assessments.forEach(function(x){ if(x.label===label) a=x });
+    return {u:u, a:a};
   }
 
   function matchImport(plan){
     var ok=[], unmatched=[];
-    plan.groups.forEach(function(g){
-      var u=null, a=null;
-      state.units.forEach(function(x){ if(x.code===g.unit) u=x });
-      if(u) u.assessments.forEach(function(x){ if(x.label===g.at) a=x });
-      if(u && a && !a.isQuiz && g.scripts.length) ok.push({g:g,u:u,a:a});
-      else unmatched.push(g);
+    plan.bands.forEach(function(g){
+      var f=locate(g.unit,g.at);
+      if(f.u && f.a && !f.a.isQuiz && g.scripts.length)
+        ok.push({type:"band", g:g, u:f.u, a:f.a});
+      else unmatched.push(g.unit+" "+g.at+" "+g.band);
+    });
+    plan.docs.forEach(function(g){
+      var f=locate(g.unit,g.at);
+      /* A quiz has no rubric, so a Rubric folder for one is a mistake. */
+      if(f.u && f.a && !(g.cat==="Rubric" && f.a.isQuiz))
+        ok.push({type:"doc", g:g, u:f.u, a:f.a});
+      else unmatched.push(g.unit+" "+g.at+" "+g.cat);
     });
     ok.sort(function(x,y){
-      return (x.u.code+x.a.label+x.g.band).localeCompare(y.u.code+y.a.label+y.g.band) });
+      return (x.u.code+x.a.label+(x.g.band||x.g.cat))
+        .localeCompare(y.u.code+y.a.label+(y.g.band||y.g.cat)) });
     return {ok:ok, unmatched:unmatched};
+  }
+
+  /* A held copy supersedes anything of the same name, which includes the
+     Moodle pointer recorded when the register was first built. */
+  function mergeFile(it, rec){
+    it.files = (it.files||[]).filter(function(f){ return f.name!==rec.name });
+    it.files.push(rec);
+  }
+
+  function filesOf(x){
+    return x.type==="band"
+      ? x.g.scripts.concat(x.g.feedback?[x.g.feedback]:[])
+      : x.g.files;
   }
 
   var impBtn=document.getElementById("importbtn");
@@ -1548,37 +1590,39 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
 
     var m=matchImport(planImport(files));
     if(!m.ok.length)
-      return say("Nothing to import there. Expected UNITCODE/AT#/Assessment Samples/BAND.");
+      return say("Nothing to import there. Expected UNITCODE/AT#/Instructions, "
+                 +"/Rubric, or /Assessment Samples/BAND.");
 
     var nFiles=0, bytes=0, i, k;
     try{
       for(i=0;i<m.ok.length;i++){
-        var gg=m.ok[i].g;
-        for(k=0;k<gg.scripts.length;k++){
-          gg.scripts[k].file=await gg.scripts[k].entry.getFile();
-          bytes+=gg.scripts[k].file.size; nFiles++;
-        }
-        if(gg.feedback){
-          gg.feedback.file=await gg.feedback.entry.getFile();
-          bytes+=gg.feedback.file.size; nFiles++;
+        var all=filesOf(m.ok[i]);
+        for(k=0;k<all.length;k++){
+          all[k].file=await all[k].entry.getFile();
+          bytes+=all[k].file.size; nFiles++;
         }
       }
     }catch(e){ return say("Could not open the files: "+(e&&e.message?e.message:e)) }
 
-    var noFb=m.ok.filter(function(x){ return !x.g.feedback }).length;
-    layer.innerHTML='<div class="scrim"><div class="modal" role="dialog" aria-label="Import collected samples">'
-      +'<div class="mh"><h2>Import collected samples</h2>'
+    var noFb=m.ok.filter(function(x){ return x.type==="band" && !x.g.feedback }).length;
+    layer.innerHTML='<div class="scrim"><div class="modal" role="dialog" aria-label="Import collected material">'
+      +'<div class="mh"><h2>Import collected material</h2>'
         +'<button class="btn" data-x="1">Close</button></div>'
       +'<div class="mb">'
       +'<p class="hint">'+nFiles+' file'+(nFiles===1?'':'s')+', '
-        +(bytes/1048576).toFixed(1)+' MB, across '+m.ok.length+' band'
-        +(m.ok.length===1?'':'s')+'. Anything already held in these bands is replaced.</p>'
+        +(bytes/1048576).toFixed(1)+' MB, into '+m.ok.length+' place'
+        +(m.ok.length===1?'':'s')+'. A file replaces anything already there under '
+        +'the same name, including the Moodle pointer for that document.</p>'
       +'<ul class="implist">'+m.ok.map(function(x){
-          return '<li>'+esc(x.u.code)+' '+esc(x.a.label)+' '+esc(x.g.band)+' &mdash; '
-            +x.g.scripts.length+' submission file'+(x.g.scripts.length===1?'':'s')
-            +(x.g.feedback?' and the feedback'
-                          :' <b>and no feedback, so this band stays incomplete</b>')
-            +'</li>' }).join("")+'</ul>'
+          if(x.type==="band")
+            return '<li>'+esc(x.u.code)+' '+esc(x.a.label)+' '+esc(x.g.band)+' &mdash; '
+              +x.g.scripts.length+' submission file'+(x.g.scripts.length===1?'':'s')
+              +(x.g.feedback?' and the feedback'
+                            :' <b>and no feedback, so this band stays incomplete</b>')
+              +'</li>';
+          return '<li>'+esc(x.u.code)+' '+esc(x.a.label)+' '+esc(x.g.cat)+' &mdash; '
+            +x.g.files.length+' file'+(x.g.files.length===1?'':'s')+'</li>';
+        }).join("")+'</ul>'
       +(m.unmatched.length
          ? '<p class="hint warn">'+m.unmatched.length+' folder'
            +(m.unmatched.length===1?'':'s')+' did not match an assessment in the '
@@ -1592,40 +1636,51 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
     layer.querySelectorAll("[data-x]").forEach(function(b){ b.onclick=closeLayer });
 
     document.getElementById("impGo").onclick=async function(){
-      this.disabled=true;
-      closeLayer();
+      this.disabled=true; closeLayer();
       var done=0, failed=[];
       for(i=0;i<m.ok.length;i++){
-        var x=m.ok[i], cat="Assessment Samples/"+x.g.band;
-        if(!x.a.samples[x.g.band]) x.a.samples[x.g.band]=blankBand();
-        var band=x.a.samples[x.g.band];
-        band.extras=[];
+        var x=m.ok[i];
         try{
-          for(k=0;k<x.g.scripts.length;k++){
-            var sc=x.g.scripts[k];
-            say("Uploading "+(++done)+" of "+nFiles+": "+sc.name);
-            var rec=await window.ASR.putFile(x.u.code,x.a.label,cat,sc.name,sc.file);
-            rec.original=sc.name;
-            if(k===0) band.script=rec; else band.extras.push(rec);
-          }
-          if(x.g.feedback){
-            say("Uploading "+(++done)+" of "+nFiles+": "+x.g.feedback.name);
-            var fr=await window.ASR.putFile(x.u.code,x.a.label,cat,
-                                            x.g.feedback.name,x.g.feedback.file);
-            fr.kind="file"; fr.original=x.g.feedback.name;
-            band.feedback=fr;
+          if(x.type==="band"){
+            var cat="Assessment Samples/"+x.g.band;
+            if(!x.a.samples[x.g.band]) x.a.samples[x.g.band]=blankBand();
+            var band=x.a.samples[x.g.band];
+            band.extras=[];
+            for(k=0;k<x.g.scripts.length;k++){
+              var sc=x.g.scripts[k];
+              say("Uploading "+(++done)+" of "+nFiles+": "+sc.name);
+              var rec=await window.ASR.putFile(x.u.code,x.a.label,cat,sc.name,sc.file);
+              rec.original=sc.name;
+              if(k===0) band.script=rec; else band.extras.push(rec);
+            }
+            if(x.g.feedback){
+              say("Uploading "+(++done)+" of "+nFiles+": "+x.g.feedback.name);
+              var fr=await window.ASR.putFile(x.u.code,x.a.label,cat,
+                                              x.g.feedback.name,x.g.feedback.file);
+              fr.kind="file"; fr.original=x.g.feedback.name;
+              band.feedback=fr;
+            }
+          } else {
+            var it = x.g.cat==="Instructions" ? x.a.instructions : x.a.rubric;
+            for(k=0;k<x.g.files.length;k++){
+              var df=x.g.files[k];
+              say("Uploading "+(++done)+" of "+nFiles+": "+df.name);
+              var drec=await window.ASR.putFile(x.u.code,x.a.label,x.g.cat,df.name,df.file);
+              drec.original=df.name;
+              mergeFile(it, drec);
+            }
           }
           await window.ASR.saveAssessment(x.u.code, x.a);
         }catch(e){
-          failed.push(x.u.code+" "+x.a.label+" "+x.g.band+": "
+          failed.push(x.u.code+" "+x.a.label+" "+(x.g.band||x.g.cat)+": "
                       +(e&&e.message?e.message:e));
         }
         render();
       }
       banner();
       say(failed.length
-        ? (nFiles-failed.length)+" uploaded, "+failed.length+" band(s) failed. "+failed[0]
-        : "Imported "+nFiles+" file"+(nFiles===1?'':'s')+" across "+m.ok.length+" band"
+        ? done+" uploaded, "+failed.length+" place(s) failed. "+failed[0]
+        : "Imported "+nFiles+" file"+(nFiles===1?'':'s')+" into "+m.ok.length+" place"
           +(m.ok.length===1?'':'s')+". Take a copy with Save files to my computer.");
     };
   };
