@@ -1276,7 +1276,7 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
       try{ out.push({dir:f.dir,name:f.name,blob:await window.ASR.getFile(f.path)}) }
       catch(e){ missing++ }
     }
-    if(missing) say(missing+" file(s) could not be fetched and were left out.");
+    state.lastMissing=missing;
     return out;
   }
 
@@ -1288,36 +1288,39 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
     say("Fetching "+list.length+" file(s)...");
     list=await materialise(list);
     if(!list.length) return say("Nothing could be fetched.");
-    if(window.showDirectoryPicker){
-      window.showDirectoryPicker({mode:"readwrite"}).then(function(root){
-        var i=0;
-        (function next(){
-          if(i>=list.length){ markExported(list.length);
-            return say(list.length+" files written into your folder. Keep this copy.") }
-          var f=list[i++], dir=Promise.resolve(root);
-          f.dir.split("/").forEach(function(part){
-            dir=dir.then(function(d){ return d.getDirectoryHandle(part,{create:true}) });
-          });
-          dir.then(function(d){ return d.getFileHandle(f.name,{create:true}) })
-             .then(function(fh){ return fh.createWritable() })
-             .then(function(w){ return w.write(f.blob).then(function(){ return w.close() }) })
-             .then(next)
-             .catch(function(){ say("Could not finish writing. Check the folder permissions and try again.") });
-        })();
-      }).catch(function(err){ if(err && err.name!=="AbortError") zip(list) });
-    } else { zip(list) }
+    if(state.lastMissing)
+      say(state.lastMissing+" file(s) could not be fetched and are left out "
+          +"of the zip. The rest are included.");
+    zip(list);
   };
 
   function zip(list){
     var z=new JSZip();
     list.forEach(function(f){ z.folder(f.dir).file(f.name,f.blob) });
+    var mb=0; list.forEach(function(f){ mb+=(f.blob&&f.blob.size)||0 });
+    say("Building a zip of "+list.length+" file(s), "
+        +(mb/1048576).toFixed(1)+" MB. This can take a moment.");
+    /* Stored, not deflated: these are mostly docx, xlsx, pptx and zip,
+       which are compressed already, so deflating costs minutes and saves
+       almost nothing. */
     z.generateAsync({type:"blob",compression:"STORE"}).then(function(blob){
+      var url=URL.createObjectURL(blob);
       var a=document.createElement("a");
-      a.href=URL.createObjectURL(blob);
+      a.href=url;
       a.download="Assessment_Samples_T2_2026.zip";
-      a.click(); URL.revokeObjectURL(a.href);
+      a.style.display="none";
+      /* A detached anchor does not reliably start a download, and the
+         object URL has to outlive the start: revoking it on the next
+         line cancels the save for anything large. */
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function(){ URL.revokeObjectURL(url); a.remove() }, 120000);
       markExported(list.length);
-      say("Downloaded as a zip holding the same folder structure. Keep this copy.");
+      say(list.length+" file(s) downloaded as "
+          +"Assessment_Samples_T2_2026.zip ("+(blob.size/1048576).toFixed(1)
+          +" MB). Keep this copy.");
+    }).catch(function(e){
+      say("Could not build the zip: "+(e&&e.message?e.message:e));
     });
   }
 
