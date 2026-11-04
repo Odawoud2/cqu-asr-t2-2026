@@ -413,6 +413,10 @@ async function load() {
     const data = u.data();
     const ats = await getDocs(atCol(u.id));
     units.push(Object.assign({}, data, {
+      /* The row buttons carry the unit's id, and find() matches on it. A unit
+         rebuilt from Firestore without one leaves every control inert, which
+         looks like the page is dead rather than like a missing field. */
+      id: u.id,
       code: u.id,
       assessments: ats.docs
         .map(d => Object.assign({ id: d.id }, d.data()))
@@ -634,7 +638,7 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
   }
   function find(unitId,atId){
     var r={u:null,a:null};
-    state.units.forEach(function(x){ if(x.id===unitId){ r.u=x;
+    state.units.forEach(function(x){ if(x.id===unitId||x.code===unitId){ r.u=x;
       x.assessments.forEach(function(y){ if(y.id===atId) r.a=y }) } });
     return r;
   }
