@@ -535,9 +535,6 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
     cross:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4.2 4.2l7.6 7.6M11.8 4.2l-7.6 7.6"/></svg>'
   };
   var METHOD={file:"Files",link:"Moodle link",text:"Text"};
-  /* Kept for the quiz link and for reading records written before
-     links stopped counting, but no longer offered as a way to supply
-     instructions or a rubric. */
 
   function blankItem(){ return {text:"",link:"",files:[]} }
   function blankBand(){ return {script:null,feedback:null,extras:[]} }
@@ -666,7 +663,7 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
       return '<div class="doclabel">Rubric</div><div class="na">Not required</div>';
     }
     var h='<div class="doclabel">'+(which==="instructions"?"Instructions":"Rubric")+'</div>';
-    h+='<div class="methods">'+["file","text"].map(function(k){
+    h+='<div class="methods">'+["file","link","text"].map(function(k){
       var on=has(it,k);
       var badge=(k==="file"&&it.files.length>1)?'<span class="b">'+it.files.length+'</span>':"";
       return '<button class="ico'+(on?" on":"")+'" title="'+esc(METHOD[k])+'"'
@@ -1013,7 +1010,9 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
       inner+='<div class="drop" id="dropz">Choose a file, or drop one here</div>'
         +'<div class="f" style="margin-top:12px"><button class="btn" id="choose">Choose file</button>'
         +'<p class="hint">Uploads are stored as <span class="mono">'
-        +esc(safe(u.code)+"_"+a.label+"_"+label)+'.ext</span>. Files shown as Moodle stay where they are and are recorded as links.</p></div>';
+        +esc(safe(u.code)+"_"+a.label+"_"+label)+'.ext</span>. A file here is '
+        +'stored in the register and comes back in the download. To point at the '
+        +'Moodle activity instead, use the link icon.</p></div>';
     } else if(kind==="text"){
       inner+='<div class="f"><label for="txt">'+esc(label)+' text</label>'
         +'<textarea id="txt" placeholder="Paste the full text here.">'+esc(it.text)+'</textarea>'
@@ -1448,6 +1447,12 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
       state.view=(role==="admin")?"admin":"uc";
       try{
         var units=await window.ASR.load();
+        units.forEach(function(u){ (u.assessments||[]).forEach(function(a){
+          ["instructions","rubric"].forEach(function(w){
+            var it=a[w];
+            if(it && it.files) it.files=it.files.filter(function(f){ return !f.remote });
+          });
+        })});
         if(!units.length){
           /* What is on screen is the copy collected from Moodle, not the
              database. Saving into it would strand uploads under units that
