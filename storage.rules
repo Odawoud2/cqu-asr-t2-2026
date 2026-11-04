@@ -1,0 +1,52 @@
+rules_version = '2';
+
+// Assessment Sample Register - Cloud Storage rules
+//
+// Files live at:  {term}/{UNITCODE}/{AT label}/{category}/{filename}
+// where {category} is Instructions, Rubric, or Assessment Samples/{BAND}
+// for example     T2-2026/PPMP20008/AT3/Assessment Samples/HD/PPMP20008_AT3_HD.docx
+//
+// Access is by shared code: one coordinator account, one administrator
+// account. Change the addresses below if you created different ones.
+//
+// A coordinator can add files but cannot remove them, so evidence collected
+// for moderation cannot be quietly withdrawn. Only the administrator deletes.
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function coordinatorAccount() { return 'asr-coordinator@register.local'; }
+    function adminAccount()       { return 'asr-admin@register.local'; }
+
+    function signedIn() {
+      return request.auth != null
+        && request.auth.token.email.lower() in [coordinatorAccount(), adminAccount()];
+    }
+
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email.lower() == adminAccount();
+    }
+
+    // The largest real submission measured across PPMP20007 and PPMP20008 was
+    // 12.1 MB. 64 MB leaves generous headroom while stopping an accidental
+    // upload of something enormous.
+    function sensibleSize() {
+      return request.resource.size < 64 * 1024 * 1024;
+    }
+
+    // The category under an assessment is one segment for Instructions and
+    // Rubric, but two for a sample: "Assessment Samples/HD". A single-segment
+    // wildcard matched the first two and silently refused every sample, which
+    // is the one thing this register exists to hold. {rest=**} covers both.
+    match /{term}/{unit}/{assessment}/{rest=**} {
+      allow read:   if signedIn();
+      allow write:  if signedIn() && sensibleSize();
+      allow delete: if isAdmin();
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
