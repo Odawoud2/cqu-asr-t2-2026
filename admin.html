@@ -568,9 +568,9 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
   }); }
   function seedUnits(){ return seedUnitsFrom(DATA) }
 
-  /* The register content is not shipped inside the page, so it cannot be read
-     from the source by anyone who merely has the address. The administrator
-     supplies it once, from a file on their own machine, when seeding. */
+  /* The register collected from Moodle is built into the page, so it is on
+     screen from the first load and seeding is one press with no file to
+     find. This is only reached if that copy is ever emptied. */
   function pickRegisterFile(){
     return new Promise(function(resolve,reject){
       var i=document.createElement("input");
@@ -1431,14 +1431,24 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
       state.view=(role==="admin")?"admin":"uc";
       try{
         var units=await window.ASR.load();
-        state.live=true;
         if(!units.length){
-          state.note="The register is empty for this term.";
+          /* What is on screen is the copy collected from Moodle, not the
+             database. Saving into it would strand uploads under units that
+             do not exist yet, so nothing may be written until the term is
+             created. */
+          state.live=false;
+          state.note="This term has not been set up yet, so nothing can be "
+            +"saved. "
+            +(window.ASR.Store.role==="admin"
+              ? "Press Set up this term, and choose the register file, "
+                +"to load the units collected from Moodle."
+              : "The course administrator needs to set it up first.");
           if(window.ASR.Store.role==="admin"){
             var seedBtn=document.getElementById("seedbtn");
             if(seedBtn) seedBtn.hidden=false;
           }
         } else {
+          state.live=true;
           state.units=units;
         }
       }catch(e){
@@ -1602,7 +1612,8 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
 
   var sb=document.getElementById("seedbtn");
   if(sb) sb.onclick=async function(){
-    if(!state.live) return say("Cannot seed: the database has not answered.");
+    if(!window.ASR.Store.ready)
+      return say("Cannot seed: the database has not answered yet.");
     if(window.ASR.Store.role!=="admin") return say("Only the administrator code can set up the register.");
     var source=DATA;
     if(!source.length){
@@ -1614,7 +1625,9 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
     try{
       await window.ASR.seed(seedUnitsFrom(source));
       state.units=await window.ASR.load();
-      sb.hidden=true; render(); banner(); say("Register created.");
+      state.live=true; state.note="";
+      sb.hidden=true; render(); banner();
+      say("Register created. "+state.units.length+" units are now live.");
     }catch(e){ sb.disabled=false; say("Could not create the register: "+(e&&e.message?e.message:e)) }
   };
 
