@@ -290,7 +290,6 @@ tr.uhead td{background:var(--surface-2);border-top:1px solid var(--rule);border-
   </table></div>
 
   <p class="live warn" id="liveflag"></p>
-  <p class="flag" id="previewFlag"></p>
 </div>
 
 <div id="gate" hidden></div>
@@ -789,8 +788,17 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
 
     var groups=visibleUnits(), html="";
     if(!groups.length){
-      html='<tr><td colspan="6"><div class="empty"><h3>Nothing matches those filters</h3>'
-        +'<p>Clear the search to see the full register.</p></div></td></tr>';
+      var _bare=!state.units.length;
+      html='<tr><td colspan="6"><div class="empty"><h3>'
+        +(_bare?'The register has not been set up yet'
+               :'Nothing matches those filters')+'</h3><p>'
+        +(_bare
+           ? (PAGE_ROLE==="admin"
+              ? 'Press Set up this term, and choose the register file, to load '
+                +'the units for Term 2, 2026.'
+              : 'The course administrator has not loaded this term yet.')
+           : 'Clear the search to see the full register.')
+        +'</p></div></td></tr>';
     }
     groups.forEach(function(g){
       html+='<tr class="uhead"><td colspan="4"><span class="ucode">'+esc(g.u.code)+'</span>'
