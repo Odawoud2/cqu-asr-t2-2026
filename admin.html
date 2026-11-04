@@ -1517,24 +1517,54 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
      document is often attached to several assessments, so those copies are
      the same bytes under different names. */
   function normName(n){
-    return String(n).replace(/\s*\(\d+\)(?=\.[^.]+$)/,"").trim().toLowerCase();
+    return String(n).replace(/\s*\(\d+\)(?=\.[^.]+$)/,"")
+                    .replace(/\s+/g," ").trim().toLowerCase();
   }
 
   /* Which assessments are waiting for a document of each name. Built from the
      references collected when the register was created, so a folder of files
      with their original names can be placed without any folder structure. */
+  /* The name recorded against an assessment is the label shown on the unit
+     site, which is not always the filename the server sends: "ACT Health"
+     arrives as "ACT Health.pdf", "Earnest and Young" as the publisher's own
+     filename, and one title carries a double space. So an assessment is
+     indexed under every name its document could plausibly arrive as. */
+  function baseFromUrl(u){
+    try{ return decodeURIComponent(String(u).split("?")[0].split("/").pop()) }
+    catch(e){ return "" }
+  }
+  function stemOf(n){ return String(n).replace(/\.[^.\/]+$/,"") }
+
   function expectedByName(){
     var map={};
+    function add(k, dest){
+      if(!k) return;
+      var list=(map[k]=map[k]||[]);
+      for(var i=0;i<list.length;i++)
+        if(list[i].a===dest.a && list[i].cat===dest.cat) return;   // already there
+      list.push(dest);
+    }
     state.units.forEach(function(u){ (u.assessments||[]).forEach(function(a){
       [["instructions","Instructions"],["rubric","Rubric"]].forEach(function(pair){
         var it=a[pair[0]]; if(!it) return;
         (it.moodleRefs||[]).forEach(function(r){
-          var k=normName(r.name);
-          (map[k]=map[k]||[]).push({u:u, a:a, cat:pair[1]});
+          var dest={u:u, a:a, cat:pair[1]};
+          var base=baseFromUrl(r.url);
+          [r.name, base].forEach(function(cand){
+            if(!cand) return;
+            add(normName(cand), dest);
+            add(normName(stemOf(cand)), dest);
+          });
         });
       });
     })});
     return map;
+  }
+
+  /* Try the name as it arrived, then without its extension, so a document
+     that gained one on download still finds its place. */
+  function findExpected(map, fname){
+    return map[normName(fname)] || map[normName(stemOf(fname))] || null;
   }
 
   function planImport(files){
@@ -1606,7 +1636,7 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
       if(seenLoose[k]) return false;
       seenLoose[k]=1; return true;
     }).forEach(function(f){
-      var dests=exp[normName(f.name)];
+      var dests=findExpected(exp, f.name);
       if(!dests || !dests.length){ unmatched.push(f.name); return }
       placed++;
       dests.forEach(function(d){
@@ -1689,9 +1719,11 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
             +x.g.files.length+' file'+(x.g.files.length===1?'':'s')+'</li>';
         }).join("")+'</ul>'
       +(m.unmatched.length
-         ? '<p class="hint warn">'+m.unmatched.length+' folder'
-           +(m.unmatched.length===1?'':'s')+' did not match an assessment in the '
-           +'register and will be skipped.</p>' : '')
+         ? '<p class="hint warn">'+m.unmatched.length+' item'
+           +(m.unmatched.length===1?'':'s')+' did not match an assessment and '
+           +'will be skipped: '+esc(m.unmatched.slice(0,8).join(', '))
+           +(m.unmatched.length>8?', and '+(m.unmatched.length-8)+' more':'')
+           +'.</p>' : '')
       +(noFb? '<p class="hint warn">'+noFb+' band'+(noFb===1?'':'s')
               +' have no marker feedback. A band only counts once both the script '
               +'and the feedback are there.</p>' : '')
