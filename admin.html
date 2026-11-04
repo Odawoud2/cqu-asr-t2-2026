@@ -541,6 +541,9 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
     cross:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4.2 4.2l7.6 7.6M11.8 4.2l-7.6 7.6"/></svg>'
   };
   var METHOD={file:"Files",link:"Moodle link",text:"Text"};
+  /* Kept for the quiz link and for reading records written before
+     links stopped counting, but no longer offered as a way to supply
+     instructions or a rubric. */
 
   function blankItem(){ return {text:"",link:"",files:[]} }
   function blankBand(){ return {script:null,feedback:null,extras:[]} }
@@ -669,7 +672,7 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
       return '<div class="doclabel">Rubric</div><div class="na">Not required</div>';
     }
     var h='<div class="doclabel">'+(which==="instructions"?"Instructions":"Rubric")+'</div>';
-    h+='<div class="methods">'+["file","link","text"].map(function(k){
+    h+='<div class="methods">'+["file","text"].map(function(k){
       var on=has(it,k);
       var badge=(k==="file"&&it.files.length>1)?'<span class="b">'+it.files.length+'</span>':"";
       return '<button class="ico'+(on?" on":"")+'" title="'+esc(METHOD[k])+'"'
