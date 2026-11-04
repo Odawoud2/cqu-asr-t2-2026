@@ -124,6 +124,7 @@ tr.uhead td{background:var(--surface-2);border-top:1px solid var(--rule);border-
 .bandtop:hover{background:var(--surface);color:var(--ink)}
 .band.part .bandtop{color:var(--part)}
 .band.done .bandtop{color:var(--ok)}
+.xtra{font-size:10px;color:var(--ink-soft);margin-left:3px;vertical-align:super}
 .fbrow{display:flex;gap:3px;justify-content:center}
 .fb{width:22px;height:22px;border:1px solid var(--rule);background:var(--surface);border-radius:2px;
   display:inline-flex;align-items:center;justify-content:center;color:var(--ink-soft);padding:0}
@@ -195,6 +196,10 @@ tr.uhead td{background:var(--surface-2);border-top:1px solid var(--rule);border-
 .r2>*{flex:1 1 140px}
 .hint{font-size:12px;color:var(--ink-soft);margin:6px 0 0}
 .hint.warn{color:var(--part)}
+.implist{margin:10px 0 0;padding-left:18px;font-size:12.5px;color:var(--ink-soft);
+  max-height:240px;overflow:auto}
+.implist li{margin:3px 0}
+.implist b{color:var(--part);font-weight:600}
 .filelist{border:1px solid var(--rule);border-radius:3px;margin-bottom:14px}
 .filerow{display:flex;align-items:center;gap:10px;padding:9px 11px;border-bottom:1px solid var(--rule-soft);font-size:13px}
 .filerow:last-child{border-bottom:0}
@@ -226,6 +231,11 @@ tr.uhead td{background:var(--surface-2);border-top:1px solid var(--rule);border-
   padding:28px;max-width:420px;width:100%;text-align:center}
 .gatebox h2{margin:0 0 8px;font-size:19px}
 .gatebox p{color:var(--ink-soft);font-size:13.5px;margin:0 0 16px}
+.gateswap{margin:14px 0 0;font-size:12.5px;color:var(--ink-soft)}
+.gateswap a{color:var(--ink-soft)}
+.pagerole{font-family:var(--font-data);font-size:11px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink-soft);border:1px solid var(--rule);
+  border-radius:2px;padding:4px 9px}
 @media (max-width:760px){ .attitle{max-width:160px} .naming-v{font-size:13.5px} }
 </style>
 
@@ -237,11 +247,8 @@ tr.uhead td{background:var(--surface-2);border-top:1px solid var(--rule);border-
       <p class="band-sub" id="bandSub"></p>
     </div>
     <div class="band-right">
-      <select class="asuc" id="asuc" aria-label="Signed in as" hidden></select>
-      <span class="switch" role="group" aria-label="View">
-        <button id="vAdmin" aria-pressed="true">Admin</button>
-        <button id="vUC" aria-pressed="false">Coordinator</button>
-      </span>
+<select class="asuc" id="asuc" aria-label="Your name" hidden></select>
+      <span class="pagerole">Unit coordinator</span>
       <span class="term mono">Term 2, 2026</span>
     </div>
   </div>
@@ -258,7 +265,7 @@ tr.uhead td{background:var(--surface-2);border-top:1px solid var(--rule);border-
 
   <div class="toolbar">
     <input type="search" id="q" placeholder="Search unit or coordinator" aria-label="Search unit or coordinator">
-    <select id="fuc" aria-label="Filter by coordinator"></select>
+    
     <select id="fst" aria-label="Filter by status">
       <option value="">All statuses</option>
       <option value="ok">Complete</option>
@@ -266,12 +273,7 @@ tr.uhead td{background:var(--surface-2);border-top:1px solid var(--rule);border-
       <option value="miss">Not started</option>
     </select>
     <span class="gap"></span>
-    <span id="adminTools">
-      <button class="btn" id="addUnit">Add unit</button>
-      <button class="btn" id="xls">Export to Excel</button>
-      <button class="btn btn-ok" id="save">Save files to my computer</button>
-      <button class="btn" id="seedbtn" hidden>Set up this term</button>
-    </span>
+    
     <button class="btn" id="signout">Sign out</button>
   </div>
 
@@ -297,6 +299,7 @@ tr.uhead td{background:var(--surface-2);border-top:1px solid var(--rule);border-
 
 <script>
 var DATA = [];
+var PAGE_ROLE = "coordinator";
 </script>
 
 <script type="module">
@@ -530,7 +533,7 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
   var METHOD={file:"Files",link:"Moodle link",text:"Text"};
 
   function blankItem(){ return {text:"",link:"",files:[]} }
-  function blankBand(){ return {script:null,feedback:null} }
+  function blankBand(){ return {script:null,feedback:null,extras:[]} }
   function has(item,kind){
     if(!item) return false;
     return kind==="file"?item.files.length>0:(kind==="link"?!!item.link:!!item.text);
@@ -538,7 +541,7 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
   function any(item){ return has(item,"file")||has(item,"link")||has(item,"text") }
 
   /* Register built from the Moodle unit sites for Term 2, 2026. */
-  var state={ view:"admin", asUC:"", q:"", uc:"", st:"", editing:null, units:[],
+  var state={ view:(PAGE_ROLE==="admin"?"admin":"uc"), asUC:"", q:"", uc:"", st:"", editing:null, units:[],
               live:false, note:"" };
 
   /* The register as first collected from Moodle. It is only ever written to
@@ -689,7 +692,8 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
       var d=function(k){ return ' data-u="'+u.id+'" data-a="'+a.id+'" data-g="'+g+'" data-k="'+k+'"' };
       return '<div class="band'+cls+'">'
         +'<button class="bandtop" title="'+esc(b.script?b.script.name:("Upload the "+g+" sample script"))+'"'
-          +' data-act="script"'+d("script")+'>'+g+(b.script?' ✓':'')+'</button>'
+          +' data-act="script"'+d("script")+'>'+g+(b.script?' ✓':'')
+          +((b.extras&&b.extras.length)?'<span class="xtra">+'+b.extras.length+'</span>':'')+'</button>'
         +'<div class="fbrow">'
           +'<button class="fb'+(fb&&fb.kind==="text"?" on":"")+'" data-act="fb"'+d("text")+'"'
             +' title="Feedback as text" aria-label="Feedback as text">'+ICON.text+'</button>'
@@ -726,17 +730,15 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
 
   function render(){
     var isAdmin=state.view==="admin";
-    document.getElementById("adminTools").hidden=!isAdmin;
-    document.getElementById("fuc").hidden=!isAdmin;
-    document.getElementById("asuc").hidden=isAdmin;
-    document.getElementById("vAdmin").setAttribute("aria-pressed",isAdmin?"true":"false");
-    document.getElementById("vUC").setAttribute("aria-pressed",isAdmin?"false":"true");
+    /* Whichever controls belong to the other role are absent from this
+       page rather than hidden, so these lookups are allowed to miss. */
+    var _e;
+    if((_e=document.getElementById("adminTools"))) _e.hidden=!isAdmin;
+    if((_e=document.getElementById("fuc"))) _e.hidden=!isAdmin;
+    if((_e=document.getElementById("asuc"))) _e.hidden=isAdmin;
     document.getElementById("bandSub").textContent = isAdmin
       ? "Moderation evidence across all Project Management units: instructions, marking rubric, and three graded samples drawn from the five grade bands."
       : "Instructions, rubrics and quiz links have been collected from your Moodle site. Add three graded samples across the bands for each assessment.";
-    document.getElementById("previewFlag").innerHTML = isAdmin
-      ? "<b>Layout preview.</b> Assessments, instruction text, attached files, rubric files and quiz links were collected from the Moodle unit sites for Term 2, 2026. Saving files and the Excel export are blocked inside this preview window. Nothing is stored yet, so a refresh clears it."
-      : "<b>This is what a coordinator sees.</b> Only their own units, with no register-wide tools. Switch back to Admin at the top right.";
 
     var scope=[];
     state.units.forEach(function(u){
@@ -776,12 +778,14 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
     state.units.forEach(function(u){ u.uc.split(", ").forEach(function(n){
       if(n && names.indexOf(n)<0) names.push(n) }) });
     names.sort();
-    document.getElementById("fuc").innerHTML='<option value="">All coordinators</option>'
-      +state.units.map(function(u){return u.uc}).filter(function(v,i,arr){return v&&arr.indexOf(v)===i}).sort()
-        .map(function(n){ return '<option'+(state.uc===n?" selected":"")+'>'+esc(n)+'</option>' }).join("");
+    if((_e=document.getElementById("fuc")))
+      _e.innerHTML='<option value="">All coordinators</option>'
+        +state.units.map(function(u){return u.uc}).filter(function(v,i,arr){return v&&arr.indexOf(v)===i}).sort()
+          .map(function(n){ return '<option'+(state.uc===n?" selected":"")+'>'+esc(n)+'</option>' }).join("");
     if(!state.asUC && names.length) state.asUC=names[0];
-    document.getElementById("asuc").innerHTML=names.map(function(n){
-      return '<option'+(state.asUC===n?" selected":"")+'>'+esc(n)+'</option>' }).join("");
+    if((_e=document.getElementById("asuc")))
+      _e.innerHTML=names.map(function(n){
+        return '<option'+(state.asUC===n?" selected":"")+'>'+esc(n)+'</option>' }).join("");
 
     var groups=visibleUnits(), html="";
     if(!groups.length){
@@ -1095,15 +1099,16 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
     document.getElementById("nBody").focus();
   }
 
-  /* ---------- view switch and filters ---------- */
-  document.getElementById("vAdmin").onclick=function(){ state.view="admin"; state.editing=null; render() };
-  document.getElementById("vUC").onclick=function(){ state.view="uc"; state.editing=null; render() };
-  document.getElementById("asuc").onchange=function(){ state.asUC=this.value; render() };
+  /* ---------- filters ---------- */
+  var _asuc=document.getElementById("asuc");
+  if(_asuc) _asuc.onchange=function(){ state.asUC=this.value; render() };
   document.getElementById("q").oninput=function(){ state.q=this.value; render() };
-  document.getElementById("fuc").onchange=function(){ state.uc=this.value; render() };
+  var _fuc=document.getElementById("fuc");
+  if(_fuc) _fuc.onchange=function(){ state.uc=this.value; render() };
   document.getElementById("fst").onchange=function(){ state.st=this.value; render() };
 
-  document.getElementById("addUnit").onclick=function(){
+  var _addUnit=document.getElementById("addUnit");
+  if(_addUnit) _addUnit.onclick=function(){
     layer.innerHTML='<div class="scrim"><div class="modal" role="dialog" aria-label="Add a unit">'
       +'<div class="mh"><h2>Add a unit</h2><button class="btn" data-x="1">Close</button></div>'
       +'<div class="mb"><div class="r2">'
@@ -1144,7 +1149,8 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
     return p.length?p.join(" + "):"No";
   }
 
-  document.getElementById("xls").onclick=function(){
+  var _xls=document.getElementById("xls");
+  if(_xls) _xls.onclick=function(){
     if(inFrame) return say("Downloads are blocked in this preview. The Excel export works in the installed app.");
     if(!state.live) say("Note: this export reflects the read-only seed, not the live register.");
     var detail=[],summary=[];
@@ -1161,8 +1167,10 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
           "Rubric files":a.isQuiz?"":a.rubric.files.map(function(f){return f.name}).join("  ")};
         GRADES.forEach(function(g){
           var b=a.samples[g];
-          row[g]=a.isQuiz?"n/a":(bandDone(b)?"Script + feedback"
-            :(b&&b.script?"Script only":(b&&b.feedback?"Feedback only":"No")));
+          var xn=(b&&b.script&&b.extras&&b.extras.length)
+            ?" (+"+b.extras.length+" more file"+(b.extras.length>1?"s":"")+")":"";
+          row[g]=a.isQuiz?"n/a":((bandDone(b)?"Script + feedback"
+            :(b&&b.script?"Script only":(b&&b.feedback?"Feedback only":"No")))+xn);
         });
         row["Samples held"]=a.isQuiz?"n/a":(held(a)+" of "+REQUIRED+" required");
         row["Quiz link"]=a.isQuiz?(a.moodle?a.moodle.url:"Not supplied"):"";
@@ -1231,6 +1239,8 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
         if(!bandStarted(b)) return;                 // empty bands get no folder
         var dir=root+"/Assessment Samples/"+g;
         if(b.script) out.push({dir:dir,name:b.script.name,path:b.script.path,blob:b.script.blob});
+        (b.extras||[]).forEach(function(x){
+          out.push({dir:dir,name:x.name,path:x.path,blob:x.blob}) });
         if(b.feedback){
           if(b.feedback.kind==="file")
             out.push({dir:dir,name:b.feedback.name,path:b.feedback.path,blob:b.feedback.blob});
@@ -1258,7 +1268,8 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
     return out;
   }
 
-  document.getElementById("save").onclick=async function(){
+  var _save=document.getElementById("save");
+  if(_save) _save.onclick=async function(){
     var list=harvest();
     if(!list.length) return say("Nothing to save yet.");
     if(inFrame) return say("Saving files is blocked in this preview. It works in the installed app.");
@@ -1351,25 +1362,23 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
     window.ASR.start();
     window.ASR.onAuthStateChanged(window.ASR.Store.auth, async function(user){
       if(!user){
-        showGate('<div class="gatebox"><h2>Assessment Sample Register</h2>'
-          +'<p>Term 2, 2026. Enter the access code you were given.</p>'
-          +'<div class="f"><label for="grole">Signing in as</label>'
-          +'<select id="grole"><option value="coordinator">Unit coordinator</option>'
-          +'<option value="admin">Course administrator</option></select></div>'
+        showGate('<div class="gatebox"><h2>Unit coordinator</h2>'
+          +'<p>Assessment Sample Register, Term 2 2026. Enter the coordinator access code.</p>'
           +'<div class="f"><label for="gcode">Access code</label>'
           +'<input id="gcode" type="password" autocomplete="current-password"></div>'
           +'<button class="btn btn-ok" id="gsign">Open the register</button>'
-          +'<p class="hint" id="gerr"></p></div>');
+          +'<p class="hint" id="gerr"></p>'
+          +'<p class="gateswap">Are you the course administrator? Open <a href="admin.html">the administrator page</a>.</p></div>');
         var err=document.getElementById("gerr");
         var go=function(){
           var code=document.getElementById("gcode").value;
           if(!code) return err.textContent="Enter the access code.";
           err.textContent="Checking...";
-          window.ASR.signInWithCode(document.getElementById("grole").value, code)
+          window.ASR.signInWithCode(PAGE_ROLE, code)
             .catch(function(x){
               var m=String(x&&x.code||x);
               err.textContent = /wrong-password|invalid-credential|user-not-found/.test(m)
-                ? "That code was not accepted for this role."
+                ? "That is not the coordinator access code."
                 : (/too-many-requests/.test(m)
                    ? "Too many attempts. Wait a few minutes and try again."
                    : (x&&x.message?x.message:m));
@@ -1386,6 +1395,17 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
           +'<button class="btn" id="gout">Sign out</button></div>');
         document.getElementById("gout").onclick=function(){ window.ASR.finishSignOut() };
         return;
+      }
+      /* A code for the other role opens the wrong page. Rather than quietly
+         showing the wrong tools, say so and point at the right address. */
+      if(role!==PAGE_ROLE){
+        showGate('<div class="gatebox"><h2>That is the administrator code</h2>'
+          +'<p>This page is for unit coordinators.</p>'
+          +'<p class="gateswap">Are you the course administrator? Open <a href="admin.html">the administrator page</a>.</p>'
+          +'<button class="btn" id="gout">Sign out</button></div>');
+        document.getElementById("gout").onclick=function(){
+          window.ASR.finishSignOut().then(function(){ location.reload() }) };
+        state.live=false; return;
       }
       hideGate();
       window.ASR.Store.user=user;
@@ -1415,6 +1435,156 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
       render(); banner();
     });
   }
+
+
+  /* ---------- importing samples collected before the register existed ----------
+     Expected layout, which is what the de-identification run already produces:
+       <any folder>/UNITCODE/AT#/Assessment Samples/BAND/FILE.ext
+     A file whose name ends in _Feedback.<ext> is the marker's feedback for that
+     band; the rest are the submission itself, the first being the script and
+     any others kept beside it. Nothing is guessed: a folder that does not match
+     a unit and assessment already in the register is skipped and reported. */
+  async function walkInto(handle, prefix, out){
+    for await (var entry of handle.values()){
+      var p = prefix ? prefix+"/"+entry.name : entry.name;
+      if(entry.kind==="directory") await walkInto(entry, p, out);
+      else out.push({path:p, entry:entry});
+    }
+  }
+
+  function planImport(files){
+    var groups=[], index={}, ignored=0;
+    files.forEach(function(f){
+      var parts=f.path.split("/");
+      var i=parts.indexOf("Assessment Samples");
+      if(i<2 || parts.length!==i+3){ ignored++; return }
+      var unit=parts[i-2], at=parts[i-1], band=parts[i+1], name=parts[i+2];
+      if(name.charAt(0)==="." || GRADES.indexOf(band)<0){ ignored++; return }
+      var key=unit+"|"+at+"|"+band;
+      if(!index[key]){
+        index[key]={unit:unit, at:at, band:band, scripts:[], feedback:null};
+        groups.push(index[key]);
+      }
+      if(/_Feedback\.[^.]+$/i.test(name)) index[key].feedback={name:name, entry:f.entry};
+      else index[key].scripts.push({name:name, entry:f.entry});
+    });
+    groups.forEach(function(g){
+      g.scripts.sort(function(a,b){ return a.name.localeCompare(b.name) });
+    });
+    return {groups:groups, ignored:ignored};
+  }
+
+  function matchImport(plan){
+    var ok=[], unmatched=[];
+    plan.groups.forEach(function(g){
+      var u=null, a=null;
+      state.units.forEach(function(x){ if(x.code===g.unit) u=x });
+      if(u) u.assessments.forEach(function(x){ if(x.label===g.at) a=x });
+      if(u && a && !a.isQuiz && g.scripts.length) ok.push({g:g,u:u,a:a});
+      else unmatched.push(g);
+    });
+    ok.sort(function(x,y){
+      return (x.u.code+x.a.label+x.g.band).localeCompare(y.u.code+y.a.label+y.g.band) });
+    return {ok:ok, unmatched:unmatched};
+  }
+
+  var impBtn=document.getElementById("importbtn");
+  if(impBtn) impBtn.onclick=async function(){
+    if(!state.live) return say("Cannot import: the register has not loaded.");
+    if(!window.showDirectoryPicker)
+      return say("This browser cannot read a folder. Use Chrome or Edge to import.");
+    var root;
+    try{ root=await window.showDirectoryPicker({mode:"read"}) }
+    catch(e){ return }
+
+    say("Reading the folder...");
+    var files=[];
+    try{ await walkInto(root,"",files) }
+    catch(e){ return say("Could not read that folder: "+(e&&e.message?e.message:e)) }
+
+    var m=matchImport(planImport(files));
+    if(!m.ok.length)
+      return say("Nothing to import there. Expected UNITCODE/AT#/Assessment Samples/BAND.");
+
+    var nFiles=0, bytes=0, i, k;
+    try{
+      for(i=0;i<m.ok.length;i++){
+        var gg=m.ok[i].g;
+        for(k=0;k<gg.scripts.length;k++){
+          gg.scripts[k].file=await gg.scripts[k].entry.getFile();
+          bytes+=gg.scripts[k].file.size; nFiles++;
+        }
+        if(gg.feedback){
+          gg.feedback.file=await gg.feedback.entry.getFile();
+          bytes+=gg.feedback.file.size; nFiles++;
+        }
+      }
+    }catch(e){ return say("Could not open the files: "+(e&&e.message?e.message:e)) }
+
+    var noFb=m.ok.filter(function(x){ return !x.g.feedback }).length;
+    layer.innerHTML='<div class="scrim"><div class="modal" role="dialog" aria-label="Import collected samples">'
+      +'<div class="mh"><h2>Import collected samples</h2>'
+        +'<button class="btn" data-x="1">Close</button></div>'
+      +'<div class="mb">'
+      +'<p class="hint">'+nFiles+' file'+(nFiles===1?'':'s')+', '
+        +(bytes/1048576).toFixed(1)+' MB, across '+m.ok.length+' band'
+        +(m.ok.length===1?'':'s')+'. Anything already held in these bands is replaced.</p>'
+      +'<ul class="implist">'+m.ok.map(function(x){
+          return '<li>'+esc(x.u.code)+' '+esc(x.a.label)+' '+esc(x.g.band)+' &mdash; '
+            +x.g.scripts.length+' submission file'+(x.g.scripts.length===1?'':'s')
+            +(x.g.feedback?' and the feedback'
+                          :' <b>and no feedback, so this band stays incomplete</b>')
+            +'</li>' }).join("")+'</ul>'
+      +(m.unmatched.length
+         ? '<p class="hint warn">'+m.unmatched.length+' folder'
+           +(m.unmatched.length===1?'':'s')+' did not match an assessment in the '
+           +'register and will be skipped.</p>' : '')
+      +(noFb? '<p class="hint warn">'+noFb+' band'+(noFb===1?'':'s')
+              +' have no marker feedback. A band only counts once both the script '
+              +'and the feedback are there.</p>' : '')
+      +'</div>'
+      +'<div class="mf"><button class="btn" data-x="1">Cancel</button>'
+        +'<button class="btn btn-ok" id="impGo">Upload them</button></div></div></div>';
+    layer.querySelectorAll("[data-x]").forEach(function(b){ b.onclick=closeLayer });
+
+    document.getElementById("impGo").onclick=async function(){
+      this.disabled=true;
+      closeLayer();
+      var done=0, failed=[];
+      for(i=0;i<m.ok.length;i++){
+        var x=m.ok[i], cat="Assessment Samples/"+x.g.band;
+        if(!x.a.samples[x.g.band]) x.a.samples[x.g.band]=blankBand();
+        var band=x.a.samples[x.g.band];
+        band.extras=[];
+        try{
+          for(k=0;k<x.g.scripts.length;k++){
+            var sc=x.g.scripts[k];
+            say("Uploading "+(++done)+" of "+nFiles+": "+sc.name);
+            var rec=await window.ASR.putFile(x.u.code,x.a.label,cat,sc.name,sc.file);
+            rec.original=sc.name;
+            if(k===0) band.script=rec; else band.extras.push(rec);
+          }
+          if(x.g.feedback){
+            say("Uploading "+(++done)+" of "+nFiles+": "+x.g.feedback.name);
+            var fr=await window.ASR.putFile(x.u.code,x.a.label,cat,
+                                            x.g.feedback.name,x.g.feedback.file);
+            fr.kind="file"; fr.original=x.g.feedback.name;
+            band.feedback=fr;
+          }
+          await window.ASR.saveAssessment(x.u.code, x.a);
+        }catch(e){
+          failed.push(x.u.code+" "+x.a.label+" "+x.g.band+": "
+                      +(e&&e.message?e.message:e));
+        }
+        render();
+      }
+      banner();
+      say(failed.length
+        ? (nFiles-failed.length)+" uploaded, "+failed.length+" band(s) failed. "+failed[0]
+        : "Imported "+nFiles+" file"+(nFiles===1?'':'s')+" across "+m.ok.length+" band"
+          +(m.ok.length===1?'':'s')+". Take a copy with Save files to my computer.");
+    };
+  };
 
   var sb=document.getElementById("seedbtn");
   if(sb) sb.onclick=async function(){
