@@ -1323,7 +1323,10 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
     if(!el) return;
     if(state.live){
       var age=exportAge();
-      var stale=(age===null||age>=14);
+      // Only the administrator can take a copy, so only the administrator is
+      // warned about not having taken one. A coordinator seeing an amber
+      // banner with no explanation just reads it as something being wrong.
+      var stale=(state.view==="admin")&&(age===null||age>=14);
       el.className="live "+(stale?"warn":"ok");
       el.innerHTML="<b>Live.</b> Saving to "+esc(window.ASR.CONFIG.term)
         +" as "+esc(state.who||"")+". "
