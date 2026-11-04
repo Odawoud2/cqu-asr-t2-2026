@@ -216,6 +216,10 @@ tr.uhead td{background:var(--surface-2);border-top:1px solid var(--rule);border-
 .live.ok b{color:var(--ok)}
 .live.warn{background:var(--miss-bg);border-color:var(--miss);color:var(--ink)}
 .live.warn b{color:var(--miss)}
+/* The hidden attribute is how the gate is dismissed, so it has to beat the
+   display rule below it. Without this the overlay stays on screen while the
+   register loads behind it, which looks exactly like a failed sign-in. */
+[hidden]{display:none!important}
 #gate{position:fixed;inset:0;background:var(--bg);z-index:90;display:flex;
   align-items:center;justify-content:center;padding:24px}
 .gatebox{background:var(--surface);border:1px solid var(--rule);border-radius:4px;
