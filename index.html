@@ -1322,33 +1322,47 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
        are compressed already, so deflating costs minutes and saves almost
        nothing. */
     var OPTS={type:"uint8array", compression:"STORE"};
+    var NAME="Assessment_Samples_T2_2026.zip";
 
-    /* Written straight to disk as it is produced. Building the archive as one
-       blob first needs it entirely in memory on top of the files already
-       fetched, which at this size the browser refuses. */
-    if(window.showSaveFilePicker){
+    function handOver(blob, where){
+      var url=URL.createObjectURL(blob);
+      var a=document.createElement("a");
+      a.href=url; a.download=NAME; a.style.display="none";
+      /* A detached anchor does not reliably start a download, and the object
+         URL has to outlive the start: revoking it on the next line cancels
+         the save for anything large. */
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 180000);
+      markExported(list.length);
+      say(list.length+" files downloaded, "+mb+" MB"+(where||"")
+          +". Open it and check the count.");
+    }
+
+    /* The archive is assembled into a private file in the browser's own
+       storage, then handed to the downloader from there. Building it as one
+       blob in memory needs the whole archive on top of the files already
+       fetched, which at this size is most of a gigabyte. Writing it out as it
+       is produced keeps memory flat, and unlike a save dialog it needs
+       nothing from the person: the download still arrives on its own. */
+    if(navigator.storage && navigator.storage.getDirectory){
       return (async function(){
-        var handle;
+        var root, fh, w;
         try{
-          handle=await window.showSaveFilePicker({
-            suggestedName:"Assessment_Samples_T2_2026.zip",
-            types:[{description:"Zip archive",accept:{"application/zip":[".zip"]}}]
-          });
-        }catch(e){ return say("Save cancelled. Nothing was written.") }
-        var w;
-        try{ w=await handle.createWritable() }
-        catch(e){ return say("Could not open that file for writing: "
-                             +(e&&e.message?e.message:e)) }
-        say("Writing "+list.length+" files, "+mb+" MB. Keep this tab open.", true);
+          root=await navigator.storage.getDirectory();
+          fh=await root.getFileHandle("asr-export.zip", {create:true});
+          w=await fh.createWritable();
+        }catch(e){ return memoryFallback("could not open working storage") }
+        say("Building the zip: 0% of "+mb+" MB", true);
         try{
           await new Promise(function(res,rej){
-            var st=z.generateInternalStream(OPTS);
+            var st=z.generateInternalStream(OPTS), last=-1;
             st.on("data", function(chunk, meta){
               st.pause();
               w.write(chunk).then(function(){
-                if(meta && meta.percent!=null)
-                  say("Writing the zip: "+Math.round(meta.percent)+"% of "
-                      +mb+" MB", true);
+                var p=meta&&meta.percent!=null?Math.round(meta.percent):null;
+                if(p!==null && p!==last){ last=p;
+                  say("Building the zip: "+p+"% of "+mb+" MB", true); }
                 st.resume();
               }, rej);
             });
@@ -1359,40 +1373,33 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
           await w.close();
         }catch(e){
           try{ await w.abort() }catch(ignored){}
-          return say("Could not write the zip: "+(e&&e.message?e.message:e));
+          return say("Could not build the zip: "+(e&&e.message?e.message:e));
         }
-        markExported(list.length);
-        say(list.length+" files written, "+mb+" MB. Open it and check the count.");
+        var file;
+        try{ file=await fh.getFile() }
+        catch(e){ return say("The zip was built but could not be read back: "
+                             +(e&&e.message?e.message:e)) }
+        handOver(file);
+        /* The working copy is only needed until the download has started. */
+        setTimeout(function(){
+          root.removeEntry("asr-export.zip").catch(function(){});
+        }, 180000);
       })();
     }
 
-    /* Older browsers have no file picker, so the archive is built in memory
-       and handed over as a download. That is what fails on a large register,
-       so say so rather than letting it die quietly. */
-    say("Building a zip of "+list.length+" files, "+mb+" MB. This can take a "
-        +"while, and may fail in this browser. Chrome or Edge writes it "
-        +"straight to disk instead.", true);
-    z.generateAsync(Object.assign({}, OPTS, {type:"blob"}), function(meta){
-      if(meta && meta.percent!=null)
-        say("Building the zip: "+Math.round(meta.percent)+"%", true);
-    }).then(function(blob){
-      var url=URL.createObjectURL(blob);
-      var a=document.createElement("a");
-      a.href=url;
-      a.download="Assessment_Samples_T2_2026.zip";
-      a.style.display="none";
-      /* A detached anchor does not reliably start a download, and the object
-         URL has to outlive the start: revoking it on the next line cancels
-         the save for anything large. */
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(function(){ URL.revokeObjectURL(url); a.remove() }, 120000);
-      markExported(list.length);
-      say(list.length+" files downloaded, "+(blob.size/1048576).toFixed(1)+" MB.");
-    }).catch(function(e){
-      say("Could not build the zip: "+(e&&e.message?e.message:e)
-          +". Use Chrome or Edge, which writes it to disk as it goes.");
-    });
+    return memoryFallback();
+
+    function memoryFallback(why){
+      say("Building a zip of "+list.length+" files, "+mb+" MB"
+          +(why?" ("+why+")":"")+". This can take several minutes.", true);
+      z.generateAsync(Object.assign({}, OPTS, {type:"blob"}), function(meta){
+        if(meta && meta.percent!=null)
+          say("Building the zip: "+Math.round(meta.percent)+"% of "+mb+" MB", true);
+      }).then(function(blob){ handOver(blob); })
+        .catch(function(e){
+          say("Could not build the zip: "+(e&&e.message?e.message:e));
+        });
+    }
   }
 
   /* ---------- boot ---------- */
