@@ -1293,13 +1293,17 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
   async function materialise(list){
     /* A harvested entry either carries its bytes already (text written by the
        register) or names a file in Cloud Storage that has to be fetched. */
-    var out=[], missing=0;
+    var out=[], missing=0, fetched=0;
+    var toFetch=list.filter(function(f){ return !f.blob && f.path }).length;
     for(var i=0;i<list.length;i++){
       var f=list[i];
       if(f.blob){ out.push(f); continue }
       if(!f.path){ missing++; continue }
       try{ out.push({dir:f.dir,name:f.name,blob:await window.ASR.getFile(f.path)}) }
       catch(e){ missing++ }
+      fetched++;
+      if(fetched===1 || fetched%5===0 || fetched===toFetch)
+        say("Fetching files: "+fetched+" of "+toFetch, true);
     }
     state.lastMissing=missing;
     return out;
@@ -1310,7 +1314,7 @@ window.ASR = { CONFIG, Store, configured, start, signInWithCode, roleOf,
     var list=harvest();
     if(!list.length) return say("Nothing to save yet.");
     if(inFrame) return say("Saving files is blocked in this preview. It works in the installed app.");
-    say("Fetching "+list.length+" file(s)...");
+    say("Fetching "+list.length+" file(s)...", true);
     list=await materialise(list);
     if(!list.length) return say("Nothing could be fetched.");
     if(state.lastMissing)
